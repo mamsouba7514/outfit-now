@@ -169,7 +169,7 @@ export default function OnboardingScreen() {
                 value={birthYear}
                 onChangeText={setBirthYear}
                 maxLength={4}
-                keyboardAppearance="dark"
+                keyboardAppearance="light"
               />
               <View style={styles.inputLine} />
             </View>
@@ -184,7 +184,7 @@ export default function OnboardingScreen() {
                 value={height}
                 onChangeText={setHeight}
                 maxLength={3}
-                keyboardAppearance="dark"
+                keyboardAppearance="light"
               />
               <View style={styles.inputLine} />
             </View>
@@ -354,10 +354,11 @@ const styles = StyleSheet.create({
     padding: spacing[5],
     gap: spacing[1],
     backgroundColor: colors.neutral[900],
+    borderRadius: 14,
   },
   genderCardActive: {
     borderColor: colors.primary[500],
-    backgroundColor: 'rgba(196,154,46,0.08)',
+    backgroundColor: 'rgba(36,72,216,0.08)',
   },
   genderLabel: {
     fontSize: typography.fontSize.base,
@@ -394,10 +395,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[800],
     backgroundColor: colors.neutral[900],
+    borderRadius: 9999,
   },
   tagChipActive: {
-    backgroundColor: colors.primary[600],
-    borderColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
+    borderColor: colors.primary[500],
   },
   tagLabel: {
     fontSize: typography.fontSize.sm,
@@ -416,10 +418,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[800],
     backgroundColor: colors.neutral[900],
+    borderRadius: 9999,
   },
   bodyCardActive: {
-    backgroundColor: colors.primary[600],
-    borderColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
+    borderColor: colors.primary[500],
   },
   bodyLabel: {
     fontSize: typography.fontSize.sm,
@@ -443,6 +446,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.neutral[800],
+    borderRadius: 9999,
   },
   backBtnText: {
     color: colors.neutral[400],
@@ -450,11 +454,17 @@ const styles = StyleSheet.create({
   },
   nextBtn: {
     flex: 1,
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     paddingVertical: spacing[4],
     alignItems: 'center',
+    borderRadius: 9999,
+    shadowColor: '#2448D8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  nextBtnDisabled: { backgroundColor: colors.neutral[800] },
+  nextBtnDisabled: { backgroundColor: colors.neutral[700], shadowOpacity: 0 },
   nextBtnText: {
     color: colors.neutral[950],
     fontSize: typography.fontSize.sm,

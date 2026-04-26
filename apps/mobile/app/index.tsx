@@ -16,14 +16,7 @@ export default function Index() {
   }, []);
 
   if (isLoading || introSeen === null) return <View style={{ flex: 1 }} />;
-
-  if (!isAuthenticated) {
-    return <Redirect href={introSeen ? '/login' : '/(intro)'} />;
-  }
-
-  if (!user?.onboardingCompleted) {
-    return <Redirect href="/(onboarding)" />;
-  }
-
+  if (!isAuthenticated) return <Redirect href={introSeen ? '/login' : '/(intro)'} />;
+  if (!user?.onboardingCompleted) return <Redirect href="/(onboarding)" />;
   return <Redirect href="/(app)/home" />;
 }

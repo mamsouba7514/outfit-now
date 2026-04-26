@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     color: colors.neutral[0],
     lineHeight: 50,
   },
-  heroDivider: { width: 32, height: 1, backgroundColor: colors.primary[600] },
+  heroDivider: { width: 48, height: 2, backgroundColor: '#E8194A' },
   heroSub: {
     fontSize: typography.fontSize.base,
     color: colors.neutral[500],
@@ -253,17 +253,21 @@ const styles = StyleSheet.create({
     padding: spacing[4],
     gap: spacing[1],
     alignItems: 'center',
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   planCardAnnual: {
-    borderColor: colors.primary[600],
-    backgroundColor: '#1A0F00',
+    borderColor: colors.primary[500],
+    backgroundColor: 'rgba(36,72,216,0.08)',
+    borderWidth: 2,
   },
   planBadge: {
     position: 'absolute',
     top: -10,
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
+    borderRadius: 9999,
   },
   planBadgeText: {
     fontSize: 9,
@@ -290,10 +294,10 @@ const styles = StyleSheet.create({
     color: colors.neutral[700],
     textAlign: 'center',
   },
-  planSubAnnual: { color: colors.primary[800] },
+  planSubAnnual: { color: colors.primary[600] },
 
   // ── Perks ─────────────────────────────────────────────────────────────────
-  perksBlock: { borderWidth: 1, borderColor: colors.neutral[800] },
+  perksBlock: { borderWidth: 1, borderColor: colors.neutral[800], borderRadius: 16, overflow: 'hidden' },
   perkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Compare ───────────────────────────────────────────────────────────────
-  compareBlock: { borderWidth: 1, borderColor: colors.neutral[800] },
+  compareBlock: { borderWidth: 1, borderColor: colors.neutral[800], borderRadius: 16, overflow: 'hidden' },
   compareRow: {
     flexDirection: 'row',
     paddingVertical: spacing[3],
@@ -342,14 +346,15 @@ const styles = StyleSheet.create({
 
   // ── CTA ───────────────────────────────────────────────────────────────────
   upgradeBtn: {
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     paddingVertical: spacing[5],
     alignItems: 'center',
-    shadowColor: colors.primary[600],
+    borderRadius: 9999,
+    shadowColor: '#2448D8',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   upgradeBtnText: {
     color: colors.neutral[950],
@@ -359,10 +364,12 @@ const styles = StyleSheet.create({
   },
   activeBlock: {
     borderWidth: 1,
-    borderColor: colors.primary[700],
+    borderColor: colors.primary[600],
     padding: spacing[5],
     alignItems: 'center',
     gap: spacing[1],
+    borderRadius: 16,
+    backgroundColor: 'rgba(36,72,216,0.05)',
   },
   activeText: {
     fontSize: typography.fontSize.sm,

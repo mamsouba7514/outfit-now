@@ -145,7 +145,7 @@ export default function ProfileScreen() {
                   onChangeText={setFirstName}
                   placeholder="Jean"
                   placeholderTextColor={colors.neutral[700]}
-                  keyboardAppearance="dark"
+                  keyboardAppearance="light"
                 />
                 <View style={styles.inputLine} />
               </View>
@@ -157,7 +157,7 @@ export default function ProfileScreen() {
                   onChangeText={setLastName}
                   placeholder="Dupont"
                   placeholderTextColor={colors.neutral[700]}
-                  keyboardAppearance="dark"
+                  keyboardAppearance="light"
                 />
                 <View style={styles.inputLine} />
               </View>
@@ -344,7 +344,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.primary[700],
+    borderColor: colors.primary[600],
+    borderRadius: 9999,
   },
   editBtnText: {
     color: colors.primary[400],
@@ -424,7 +425,8 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[700],
     padding: spacing[3],
     gap: 2,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: colors.neutral[900],
+    borderRadius: 12,
   },
   genderCardActive: {
     borderColor: colors.primary[500],
