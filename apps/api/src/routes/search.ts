@@ -5,8 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { redis } from '../lib/redis.js';
 import { searchProducts, isSearchAvailable } from '../services/shopping/SearchService.js';
 import { SearchIntelligenceService } from '../services/shopping/SearchIntelligenceService.js';
-import { buildKarlContext } from '../services/styleProfile.js';
-import { getStyleProfile } from '../services/styleProfile.js';
+import { buildKarlContext, computeStyleProfile } from '../services/styleProfile.js';
 
 const searchSchema = z.object({
   query:      z.string().min(1).max(300),
@@ -51,7 +50,7 @@ export async function searchRoutes(app: FastifyInstance) {
     // Charger profil style pour personnaliser la recherche
     const [user, styleProfile] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId }, select: { gender: true } }),
-      getStyleProfile(userId).catch(() => null),
+      computeStyleProfile(userId).catch(() => null),
     ]);
 
     let finalQueries: Array<{ query: string; category: string }> = [{ query, category: category ?? 'general' }];
