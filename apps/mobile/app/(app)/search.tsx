@@ -140,13 +140,15 @@ export default function SearchScreen() {
     getSearchHistory().then(setHistory).catch(() => {});
   }, []);
 
-  const doSearch = useCallback(async (q?: string) => {
+  const doSearch = useCallback(async (q?: string, catOverride?: string | null, priceOverride?: number | null) => {
     const finalQuery = q ?? query;
     if (!finalQuery.trim()) return;
+    const finalCat = catOverride !== undefined ? (catOverride ?? undefined) : category;
+    const finalPrice = priceOverride !== undefined ? (priceOverride ?? undefined) : maxPrice;
     setLoading(true);
     setSearched(false);
     try {
-      const res = await searchStyle(finalQuery.trim(), { category, maxPrice, maxResults: 12 });
+      const res = await searchStyle(finalQuery.trim(), { category: finalCat, maxPrice: finalPrice, maxResults: 12 });
       setResults(res.results);
       setIntent(res.intent);
       setSearched(true);
@@ -221,7 +223,10 @@ export default function SearchScreen() {
             <TouchableOpacity
               key={String(c.value)}
               style={[styles.filterChip, category === c.value && styles.filterChipActive]}
-              onPress={() => setCategory(c.value)}
+              onPress={() => {
+                setCategory(c.value);
+                if (searched && query.trim()) void doSearch(query, c.value ?? null, maxPrice ?? null);
+              }}
             >
               <Text style={[styles.filterChipText, category === c.value && styles.filterChipTextActive]}>
                 {c.label}
@@ -234,7 +239,10 @@ export default function SearchScreen() {
             <TouchableOpacity
               key={String(b.value)}
               style={[styles.filterChip, maxPrice === b.value && styles.filterChipActive]}
-              onPress={() => setMaxPrice(b.value)}
+              onPress={() => {
+                setMaxPrice(b.value);
+                if (searched && query.trim()) void doSearch(query, category ?? null, b.value ?? null);
+              }}
             >
               <Text style={[styles.filterChipText, maxPrice === b.value && styles.filterChipTextActive]}>
                 {b.label}
