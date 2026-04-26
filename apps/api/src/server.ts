@@ -19,6 +19,10 @@ import { meRoutes } from './routes/me.js';
 import { socialRoutes } from './routes/social.js';
 import { revenuecatRoutes } from './routes/revenuecat.js';
 import { stripeRoutes } from './routes/stripe.js';
+import { dashAgentRoutes } from './routes/dash-agents.js';
+import { dashTaskRoutes } from './routes/dash-tasks.js';
+import { dashOutputRoutes } from './routes/dash-outputs.js';
+import { dashWsRoutes } from './routes/dash-ws.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -91,6 +95,10 @@ export async function buildApp() {
   await app.register(searchRoutes);
   await app.register(socialRoutes);
   await app.register(avatarRoutes);
+  await app.register(dashAgentRoutes);
+  await app.register(dashTaskRoutes);
+  await app.register(dashOutputRoutes);
+  await app.register(dashWsRoutes);
 
   return app;
 }
