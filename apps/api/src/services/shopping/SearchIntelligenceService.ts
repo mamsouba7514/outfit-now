@@ -18,7 +18,9 @@ const queriesSchema = z.object({
 
 export type OptimizedQueries = z.infer<typeof queriesSchema>;
 
-const SYSTEM = `Tu es expert en e-commerce mode et stylisme. Transforme une demande utilisateur en requêtes de recherche shopping optimisées.
+const SYSTEM = `Tu es expert en e-commerce mode et luxe. Tu connais parfaitement les maisons de couture et les marques de luxe (Amiri, Gucci, Dior, Louis Vuitton, Prada, Balenciaga, Saint Laurent, Bottega Veneta, Valentino, Loewe, Jacquemus, Celine, Hermès, Chanel, Off-White, Rick Owens, Maison Margiela).
+
+Transforme une demande utilisateur en requêtes de recherche shopping optimisées.
 Réponds UNIQUEMENT avec un JSON valide, sans markdown.
 
 Format :
@@ -30,10 +32,12 @@ Format :
 }
 
 Règles :
-- Requêtes précises et commercialisables (marque + couleur + matière si pertinent)
+- Si la marque est mentionnée : inclure le NOM OFFICIEL EXACT de la marque (ex: "Amiri" pas "amiri", "Christian Dior" pas "Dior" pour certains produits)
+- Pour les marques luxe : ajouter la catégorie précise du produit signature (ex: "Amiri MX1 jeans", "Gucci Horsebit loafer", "Dior Saddle bag")
+- Requêtes précises : marque + produit + couleur/matière si pertinent
 - Adapter au style de l'utilisateur si fourni
 - priority 1 = plus pertinent, 3 = alternatif
-- Langues : fr-FR prioritaire, ajouter une variante anglaise si la pièce a un nom anglais courant
+- Langues : utiliser la terminologie officielle anglaise pour les articles de luxe (noms de collection, modèles)
 - Max 5 requêtes, min 1`;
 
 export class SearchIntelligenceService {

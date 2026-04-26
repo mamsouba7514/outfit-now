@@ -58,6 +58,19 @@ const SUGGESTIONS = [
   'chemise blanche col V',
 ];
 
+const LUXURY_BRANDS = [
+  { label: 'AMIRI', query: 'Amiri' },
+  { label: 'GUCCI', query: 'Gucci' },
+  { label: 'DIOR', query: 'Christian Dior' },
+  { label: 'LOUIS VUITTON', query: 'Louis Vuitton' },
+  { label: 'PRADA', query: 'Prada' },
+  { label: 'BALENCIAGA', query: 'Balenciaga' },
+  { label: 'SAINT LAURENT', query: 'Yves Saint Laurent' },
+  { label: 'BOTTEGA', query: 'Bottega Veneta' },
+  { label: 'VALENTINO', query: 'Valentino' },
+  { label: 'LOEWE', query: 'Loewe' },
+];
+
 // ─── Product Card ─────────────────────────────────────────────────────────────
 
 function ProductCard({ product }: { product: SearchProduct }) {
@@ -139,6 +152,7 @@ export default function SearchScreen() {
   const [category, setCategory]   = useState<string | undefined>(undefined);
   const [maxPrice, setMaxPrice]   = useState<number | undefined>(undefined);
   const [minPrice, setMinPrice]   = useState<number | undefined>(undefined);
+  const [luxeBrand, setLuxeBrand] = useState<string | null>(null);
 
   const inputRef = useRef<TextInput>(null);
   const resultsAnim = useRef(new Animated.Value(0)).current;
@@ -293,6 +307,26 @@ export default function SearchScreen() {
               <View style={styles.divider} />
             </>
           )}
+
+          <Text style={styles.sectionLabel}>MARQUES LUXE</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing[2], paddingBottom: spacing[3] }}>
+            {LUXURY_BRANDS.map((b) => (
+              <TouchableOpacity
+                key={b.query}
+                style={[styles.luxeChip, luxeBrand === b.query && styles.luxeChipActive]}
+                onPress={() => {
+                  const newBrand = luxeBrand === b.query ? null : b.query;
+                  setLuxeBrand(newBrand);
+                  const newQuery = newBrand ? newBrand : '';
+                  if (newQuery) { setQuery(newQuery); void doSearch(newQuery); }
+                }}
+              >
+                <Text style={[styles.luxeChipText, luxeBrand === b.query && styles.luxeChipTextActive]}>
+                  {b.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
           <Text style={styles.sectionLabel}>INSPIRATIONS</Text>
           <View style={styles.suggestionsGrid}>
@@ -473,6 +507,25 @@ const styles = StyleSheet.create({
   },
   grid: { padding: spacing[4], paddingTop: spacing[2], gap: spacing[3] },
   row: { gap: spacing[3] },
+  luxeChip: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderWidth: 1,
+    borderColor: colors.neutral[700],
+    borderRadius: 9999,
+    backgroundColor: colors.neutral[900],
+  },
+  luxeChipActive: {
+    backgroundColor: colors.neutral[0],
+    borderColor: colors.neutral[0],
+  },
+  luxeChipText: {
+    fontSize: 9,
+    color: colors.neutral[400],
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.black,
+  },
+  luxeChipTextActive: { color: colors.neutral[950] },
   emptyResults: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[3], padding: spacing[8] },
   emptyTitle: { fontSize: typography.fontSize.base, fontWeight: typography.fontWeight.bold, color: colors.neutral[0] },
   emptySub: { fontSize: typography.fontSize.sm, color: colors.neutral[500], textAlign: 'center', lineHeight: 20 },
