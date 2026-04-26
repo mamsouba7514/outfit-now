@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     color: colors.neutral[500],
     lineHeight: 20,
   },
-  photo: { width: '100%', height: 300 },
+  photo: { width: '100%', height: 300, borderRadius: 0 },
   section: {
     paddingHorizontal: spacing[6],
     paddingTop: spacing[6],
@@ -307,6 +307,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[800],
     backgroundColor: colors.neutral[900],
+    borderRadius: 9999,
   },
   chipActive: {
     backgroundColor: colors.primary[600],
@@ -333,9 +334,10 @@ const styles = StyleSheet.create({
   addTagBtn: {
     width: 40,
     height: 40,
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 20,
   },
   addTagBtnText: {
     color: colors.neutral[950],
@@ -353,7 +355,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1],
     borderWidth: 1,
     borderColor: colors.primary[800],
-    backgroundColor: 'rgba(196,154,46,0.08)',
+    backgroundColor: 'rgba(36,72,216,0.08)',
   },
   tagBubbleText: {
     fontSize: 9,
@@ -364,9 +366,15 @@ const styles = StyleSheet.create({
   saveBtn: {
     marginHorizontal: spacing[6],
     marginTop: spacing[8],
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     paddingVertical: spacing[4],
     alignItems: 'center',
+    borderRadius: 9999,
+    shadowColor: '#2448D8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
   saveBtnText: {
     color: colors.neutral[950],

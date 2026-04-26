@@ -650,9 +650,10 @@ const styles = StyleSheet.create({
     color: colors.neutral[0],
   },
   shareBtn: {
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
+    borderRadius: 9999,
   },
   shareBtnText: {
     color: colors.neutral[950],
@@ -675,7 +676,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabBtnActive: {
-    borderBottomColor: colors.primary[500],
+    borderBottomColor: colors.primary[400],
   },
   tabLabel: {
     fontSize: 9,
@@ -753,6 +754,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.neutral[800],
+    borderRadius: 8,
   },
   itemThumbImage: { width: 80, height: 100 },
   itemThumbPlaceholder: {
@@ -778,7 +780,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    backgroundColor: 'rgba(196,154,46,0.08)',
+    backgroundColor: 'rgba(36,72,216,0.08)',
     borderWidth: 1,
     borderColor: colors.primary[900],
   },
@@ -919,7 +921,8 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 36,
     height: 36,
-    backgroundColor: colors.primary[600],
+    borderRadius: 18,
+    backgroundColor: colors.primary[500],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -954,10 +957,12 @@ const styles = StyleSheet.create({
     padding: spacing[2],
     gap: spacing[2],
     position: 'relative',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   outfitThumbSelected: {
     borderColor: colors.primary[500],
-    backgroundColor: 'rgba(196,154,46,0.06)',
+    backgroundColor: 'rgba(36,72,216,0.06)',
   },
   outfitThumbItems: { flexDirection: 'row', gap: 3 },
   outfitThumbItem: { flex: 1, height: 60, backgroundColor: colors.neutral[800] },
@@ -1002,11 +1007,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
   postBtn: {
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     marginHorizontal: spacing[5],
     marginTop: spacing[3],
     paddingVertical: spacing[4],
     alignItems: 'center',
+    borderRadius: 9999,
   },
   postBtnDisabled: { backgroundColor: colors.neutral[800] },
   postBtnText: {
@@ -1022,7 +1028,8 @@ const styles = StyleSheet.create({
   emptyAccent: {
     fontSize: 48,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[900],
+    color: colors.neutral[800],
+    letterSpacing: 2,
   },
   emptyTitle: {
     fontSize: typography.fontSize.base,

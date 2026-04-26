@@ -44,11 +44,12 @@ function ShoppingCard({ product }: { product: ShoppingResult }) {
 const shopStyles = StyleSheet.create({
   card: {
     width: 140,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: colors.neutral[900],
     borderWidth: 1,
-    borderColor: colors.neutral[700],
+    borderColor: colors.neutral[800],
     marginRight: spacing[3],
     overflow: 'hidden',
+    borderRadius: 12,
   },
   img: { width: '100%', height: 120 },
   info: {
@@ -427,6 +428,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     borderWidth: 1,
     borderColor: colors.neutral[800],
+    borderRadius: 9999,
   },
   filterBtnActive: {
     backgroundColor: colors.primary[600],
@@ -446,6 +448,8 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     borderWidth: 1,
     borderColor: colors.neutral[800],
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   cardTop: {
     flexDirection: 'row',
@@ -471,7 +475,7 @@ const styles = StyleSheet.create({
   badgeSaved: {
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    backgroundColor: 'rgba(196,154,46,0.15)',
+    backgroundColor: 'rgba(36,72,216,0.12)',
     borderWidth: 1,
     borderColor: colors.primary[700],
   },
@@ -531,8 +535,9 @@ const styles = StyleSheet.create({
   btnSave: {
     flex: 1,
     paddingVertical: spacing[3],
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     alignItems: 'center',
+    borderRadius: 9999,
   },
   btnSaveText: {
     fontSize: typography.fontSize.xs,
@@ -546,6 +551,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[800],
     alignItems: 'center',
+    borderRadius: 9999,
   },
   btnDiscardText: {
     fontSize: typography.fontSize.xs,
@@ -578,7 +584,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     borderWidth: 1,
     borderColor: colors.primary[800],
-    backgroundColor: 'rgba(196,154,46,0.05)',
+    backgroundColor: 'rgba(36,72,216,0.05)',
   },
   btnTryonText: {
     fontSize: 9,
@@ -635,7 +641,10 @@ const styles = StyleSheet.create({
   tryonIconWrap: {
     width: 96,
     height: 96,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: colors.neutral[900],
+    borderRadius: 48,
+    borderWidth: 1,
+    borderColor: colors.neutral[800],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[2],
@@ -665,6 +674,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
     borderWidth: 1,
     borderColor: colors.primary[600],
+    borderRadius: 9999,
   },
   modalAvatarBtnText: {
     fontSize: 10,
@@ -676,10 +686,11 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: spacing[20], gap: spacing[3] },
   emptyAccent: {
-    fontSize: 80,
+    fontSize: 48,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[900],
-    lineHeight: 80,
+    color: colors.neutral[800],
+    lineHeight: 56,
+    letterSpacing: 2,
   },
   emptyTitle: {
     fontSize: typography.fontSize.lg,
@@ -694,9 +705,15 @@ const styles = StyleSheet.create({
   },
   emptyBtn: {
     marginTop: spacing[2],
-    backgroundColor: colors.primary[600],
+    backgroundColor: colors.primary[500],
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[6],
+    borderRadius: 9999,
+    shadowColor: '#2448D8',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   emptyBtnText: {
     color: colors.neutral[950],
