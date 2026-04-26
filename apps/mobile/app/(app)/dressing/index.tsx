@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '@outfit-now/design-tokens';
 import type { DressingItem } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
@@ -141,9 +142,18 @@ export default function DressingScreen() {
           <Text style={styles.eyebrow}>MON</Text>
           <Text style={styles.title}>DRESSING</Text>
         </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[3] }}>
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/search' as never)}
+            style={styles.searchIconBtn}
+            hitSlop={8}
+          >
+            <Ionicons name="search-outline" size={22} color={colors.primary[500]} />
+          </TouchableOpacity>
         <View style={styles.countBadge}>
           <Text style={styles.countText}>{tab === 'dressing' ? total : saleItems.length}</Text>
           <Text style={styles.countLabel}>{tab === 'dressing' ? 'PIÈCES' : 'EN VENTE'}</Text>
+        </View>
         </View>
       </View>
 
@@ -466,6 +476,15 @@ const styles = StyleSheet.create({
     color: colors.neutral[700],
     textAlign: 'center',
     paddingHorizontal: spacing[8],
+  },
+
+  searchIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(36,72,216,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // ── FAB ──────────────────────────────────────────────────────────────────

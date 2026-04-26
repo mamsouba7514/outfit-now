@@ -10,6 +10,7 @@ import Fastify from 'fastify';
 import { env } from './lib/env.js';
 import { redis } from './lib/redis.js';
 import { affiliateRoutes } from './routes/affiliate.js';
+import { searchRoutes } from './routes/search.js';
 import { authRoutes } from './routes/auth.js';
 import { avatarRoutes } from './routes/avatar.js';
 import { briefRoutes } from './routes/briefs.js';
@@ -87,6 +88,7 @@ export async function buildApp() {
   await app.register(stripeRoutes);
   await app.register(revenuecatRoutes);
   await app.register(affiliateRoutes);
+  await app.register(searchRoutes);
   await app.register(socialRoutes);
   await app.register(avatarRoutes);
 

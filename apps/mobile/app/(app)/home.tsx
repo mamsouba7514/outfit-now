@@ -239,6 +239,14 @@ export default function HomeScreen() {
             <Text style={styles.actionTitle}>SOCIAL</Text>
             <Text style={styles.actionSub}>Explore le style feed</Text>
           </ActionCard>
+
+          <ActionCard onPress={() => router.push('/(app)/search')}>
+            <View style={styles.actionIconWrap}>
+              <Ionicons name="search-outline" size={22} color={colors.rose?.[500] ?? '#E8194A'} />
+            </View>
+            <Text style={styles.actionTitle}>RECHERCHER</Text>
+            <Text style={styles.actionSub}>Trouver en ligne</Text>
+          </ActionCard>
         </View>
       </View>
 

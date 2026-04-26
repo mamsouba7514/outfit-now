@@ -96,6 +96,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen name="outfits" options={{ href: null }} />
+      <Tabs.Screen name="search" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="avatar" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="scan" options={{ href: null, tabBarStyle: { display: 'none' } }} />
