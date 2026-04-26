@@ -23,6 +23,7 @@ import {
   saveAvatar,
   getAvatarPhotoUploadUrl,
   generateAvatarImage,
+  analyzeAvatarPhoto,
   type AvatarData,
   type AvatarUpdatePayload,
 } from '../../lib/avatar';
@@ -387,6 +388,8 @@ export default function AvatarScreen() {
   const [photoUrl,      setPhotoUrl]      = useState<string | null>(null);
   const [photoKey,      setPhotoKey]      = useState<string | null>(null);
   const [generatedUrl,  setGeneratedUrl]  = useState<string | null>(null);
+  const [analyzing,     setAnalyzing]     = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
 
   const savedRef = useRef<AvatarUpdatePayload>({});
 
@@ -493,6 +496,26 @@ export default function AvatarScreen() {
       setPhotoUrl(asset.uri);
       setPhotoKey(key);
       markChanged();
+
+      // Auto-analyse Claude Haiku — détecte morphologie, peau, cheveux
+      setAnalyzing(true);
+      setAnalysisResult(null);
+      try {
+        const { analysis, autoApplied } = await analyzeAvatarPhoto();
+        if (autoApplied) {
+          setBodyType(analysis.bodyType as BodyType);
+          setSkinTone(analysis.skinTone as SkinTone);
+          setHairColor(analysis.hairColor as HairColor);
+          setHairLength(analysis.hairLength as HairLength);
+          setAnalysisResult(`✓ Karl a détecté ta morphologie — confiance ${Math.round(analysis.confidence * 100)}%`);
+        } else {
+          setAnalysisResult('Photo reçue. Vérifie et ajuste les champs si besoin.');
+        }
+      } catch {
+        setAnalysisResult('Analyse manuelle requise.');
+      } finally {
+        setAnalyzing(false);
+      }
     } catch {
       Alert.alert('Erreur', "Impossible d'uploader la photo.");
     } finally {
@@ -803,6 +826,20 @@ export default function AvatarScreen() {
           <>
             <Text style={styles.sectionEye}>ÉTAPE 2 — STYLE</Text>
 
+            {/* Bannière résultat analyse photo */}
+            {(analyzing || analysisResult) && (
+              <View style={styles.analysisBanner}>
+                {analyzing ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
+                    <ActivityIndicator size="small" color={colors.primary[500]} />
+                    <Text style={styles.analysisBannerText}>Karl analyse ta photo…</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.analysisBannerText}>{analysisResult}</Text>
+                )}
+              </View>
+            )}
+
             <Text style={styles.sectionTitle}>TEINTE DE PEAU</Text>
             <View style={styles.swatchRow}>
               {SKIN_TONES.map((s) => (
@@ -977,6 +1014,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     minHeight: MANNEQUIN_HEIGHT,
+    borderRadius: 16,
   },
   // Photo IA générée
   generatedPhoto: {
@@ -1017,10 +1055,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    backgroundColor: colors.primary[400],
+    backgroundColor: colors.primary[500],
     paddingVertical: spacing[3],
-    paddingHorizontal: spacing[5],
+    paddingHorizontal: spacing[6],
     marginTop: spacing[4],
+    borderRadius: 9999,
+    shadowColor: '#2448D8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 7,
   },
   generateOverlayBtnText: {
     fontSize: 10,
@@ -1068,7 +1112,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(196,154,46,0.85)',
+    backgroundColor: 'colors.primary[500]',
     paddingVertical: 1,
     alignItems: 'center',
   },
@@ -1129,7 +1173,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
     borderWidth: 1,
     borderColor: `${colors.primary[400]}44`,
-    backgroundColor: 'rgba(196,154,46,0.04)',
+    backgroundColor: 'rgba(36,72,216,0.04)',
     padding: spacing[4],
     gap: spacing[2],
   },
@@ -1180,8 +1224,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  bodyTypeCardActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(196,154,46,0.08)' },
+  bodyTypeCardActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(36,72,216,0.08)' },
   bodyTypeLabel: { fontSize: 11, fontWeight: typography.fontWeight.black, color: colors.neutral[500], letterSpacing: 2 },
   bodyTypeLabelActive: { color: colors.primary[400] },
   bodyTypeDesc: { fontSize: 11, color: colors.neutral[600], marginTop: 2 },
@@ -1196,8 +1242,9 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[800],
     backgroundColor: colors.neutral[900],
     alignItems: 'center',
+    borderRadius: 9999,
   },
-  heightChipActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(196,154,46,0.08)' },
+  heightChipActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(36,72,216,0.08)' },
   heightChipText: { fontSize: 11, color: colors.neutral[500], letterSpacing: 0.5 },
   heightChipTextActive: { color: colors.primary[400], fontWeight: typography.fontWeight.bold },
 
@@ -1210,7 +1257,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  swatchActive: { borderColor: colors.primary[400], borderWidth: 2 },
+  swatchActive: { borderColor: colors.primary[400], borderWidth: 2, borderRadius: 4 },
   swatchLabel: { fontSize: 9, color: colors.neutral[600], letterSpacing: 0.5 },
   swatchLabelActive: { color: colors.neutral[0] },
 
@@ -1223,8 +1270,9 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[800],
     backgroundColor: colors.neutral[900],
     alignItems: 'center',
+    borderRadius: 9999,
   },
-  hairLengthBtnActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(196,154,46,0.08)' },
+  hairLengthBtnActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(36,72,216,0.08)' },
   hairLengthText: { fontSize: 9, color: colors.neutral[500], letterSpacing: 2, fontWeight: typography.fontWeight.bold },
   hairLengthTextActive: { color: colors.primary[400] },
 
@@ -1256,6 +1304,7 @@ const styles = StyleSheet.create({
     borderColor: colors.neutral[700],
     paddingVertical: spacing[4],
     alignItems: 'center',
+    borderRadius: 9999,
   },
   nextBtnText: { fontSize: 11, color: colors.neutral[0], letterSpacing: 2, fontWeight: typography.fontWeight.bold },
 
@@ -1271,17 +1320,37 @@ const styles = StyleSheet.create({
     padding: spacing[4],
   },
   saveBtn: {
-    backgroundColor: colors.primary[400],
+    backgroundColor: colors.primary[500],
     paddingVertical: spacing[4],
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing[2],
+    borderRadius: 9999,
+    shadowColor: '#2448D8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 7,
   },
   saveBtnText: {
     fontSize: 12,
     fontWeight: typography.fontWeight.black,
     color: colors.neutral[950],
     letterSpacing: 2,
+  },
+  analysisBanner: {
+    backgroundColor: 'rgba(36,72,216,0.08)',
+    borderWidth: 1,
+    borderColor: colors.primary[600],
+    borderRadius: 8,
+    padding: spacing[3],
+    marginBottom: spacing[3],
+  },
+  analysisBannerText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary[500],
+    letterSpacing: 0.5,
+    lineHeight: 18,
   },
 });

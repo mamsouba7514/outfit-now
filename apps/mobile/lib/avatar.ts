@@ -55,3 +55,19 @@ export async function requestTryOn(outfitId: string, itemId?: string): Promise<{
     body: JSON.stringify({ outfitId, itemId }),
   });
 }
+
+export interface AvatarAnalysisResult {
+  analysis: {
+    bodyType: AvatarData['bodyType'];
+    skinTone: AvatarData['skinTone'];
+    hairColor: AvatarData['hairColor'];
+    hairLength: AvatarData['hairLength'];
+    confidence: number;
+    notes?: string;
+  };
+  autoApplied: boolean;
+}
+
+export async function analyzeAvatarPhoto(): Promise<AvatarAnalysisResult> {
+  return apiRequest('/v1/avatar/analyze-photo', { method: 'POST', body: JSON.stringify({}) });
+}

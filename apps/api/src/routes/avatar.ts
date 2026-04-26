@@ -308,6 +308,50 @@ export async function avatarRoutes(app: FastifyInstance) {
     }
   });
 
+  // ── POST /v1/avatar/analyze-photo — analyse IA du selfie ────────────────
+  // Appelé après l'upload. Claude Haiku détecte morphologie, peau, cheveux
+  // et pré-remplit automatiquement le formulaire avatar.
+  app.post('/v1/avatar/analyze-photo', auth, async (request, reply) => {
+    const { id: userId } = request.user as { id: string };
+
+    const avatar = await prisma.avatar.findUnique({ where: { userId } });
+    if (!avatar?.photoKey) {
+      return reply.status(400).send({ message: 'Upload un selfie avant de lancer l\'analyse.' });
+    }
+
+    try {
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const obj = await s3.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: avatar.photoKey }));
+      if (!obj.Body) return reply.status(500).send({ message: 'Photo non accessible.' });
+
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of obj.Body as AsyncIterable<Uint8Array>) chunks.push(chunk);
+      const buffer = Buffer.concat(chunks);
+
+      const { AvatarVisionProvider } = await import('../services/vision/AvatarVisionProvider.js');
+      const provider = new AvatarVisionProvider();
+      const analysis = await provider.analyzePhoto(buffer, 'image/jpeg');
+
+      if (analysis.confidence >= 0.5) {
+        await prisma.avatar.update({
+          where: { userId },
+          data: {
+            bodyType: analysis.bodyType,
+            skinTone: analysis.skinTone,
+            hairColor: analysis.hairColor,
+            hairLength: analysis.hairLength,
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      return reply.send({ analysis, autoApplied: analysis.confidence >= 0.5 });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Analyse échouée';
+      return reply.status(500).send({ message: msg });
+    }
+  });
+
   // ── POST /v1/avatar/tryon — essayage virtuel ──────────────────────────────
   //
   // 🔌 POINT D'INTÉGRATION : remplace le bloc "MOCK" par l'appel API réel
@@ -340,16 +384,51 @@ export async function avatarRoutes(app: FastifyInstance) {
       return reply.send({ resultUrl: cache[cacheKey], cached: true, status: 'completed' });
     }
 
-    // ── MOCK — remplacer par l'appel Fashn.ai / Replicate ─────────────────
-    // Pour l'instant on retourne un statut "pending" avec les infos nécessaires
-    // Le frontend affiche un placeholder animé.
-    return reply.send({
-      status: 'unavailable',
-      message: 'Try-on IA en cours de déploiement. Disponible prochainement.',
-      // Ces champs seront remplis par la vraie API :
-      // resultUrl: 'https://...',
-      // cached: false,
+    // ── Fashn.ai try-on ───────────────────────────────────────────────────
+    const { TryOnService } = await import('../services/vision/TryOnService.js');
+    const tryOnService = new TryOnService();
+
+    if (!tryOnService.available) {
+      return reply.send({
+        status: 'unavailable',
+        message: 'Essayage IA bientôt disponible. Configure FASHN_API_KEY dans .env pour activer.',
+      });
+    }
+
+    const outfit = await prisma.outfit.findFirst({
+      where: { id: body.data.outfitId, brief: { userId } },
+      include: { items: { include: { dressingItem: true }, take: 1 } },
     });
-    // ── FIN MOCK ───────────────────────────────────────────────────────────
+    if (!outfit) return reply.status(404).send({ message: 'Outfit not found' });
+
+    const targetItem = body.data.itemId
+      ? outfit.items.find((oi) => oi.dressingItemId === body.data.itemId)?.dressingItem
+      : outfit.items[0]?.dressingItem;
+
+    if (!targetItem) return reply.status(404).send({ message: 'Item not found' });
+
+    const modelImageUrl = avatar.generatedKey
+      ? getPublicUrl(avatar.generatedKey)
+      : avatar.photoKey ? getPublicUrl(avatar.photoKey) : null;
+    const garmentImageUrl = targetItem.imageKey ? getPublicUrl(targetItem.imageKey) : null;
+
+    if (!modelImageUrl || !garmentImageUrl) {
+      return reply.status(400).send({ message: 'Photo avatar ou vêtement manquant.' });
+    }
+
+    const result = await tryOnService.runTryOn({
+      modelImageUrl,
+      garmentImageUrl,
+      category: targetItem.category,
+    });
+
+    if (result.status === 'completed' && result.resultUrl) {
+      await prisma.avatar.update({
+        where: { userId },
+        data: { tryonCache: { ...cache, [cacheKey]: result.resultUrl }, updatedAt: new Date() },
+      });
+    }
+
+    return reply.send(result);
   });
 }
