@@ -1,5 +1,6 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
+import { seedAgents } from './seeds/agents.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 
@@ -392,6 +393,8 @@ async function main() {
       })),
     ],
   });
+
+  await seedAgents();
 
   console.log('\n🎉 Seed complete!\n');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
