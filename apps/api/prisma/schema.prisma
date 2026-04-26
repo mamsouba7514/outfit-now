@@ -366,3 +366,75 @@ model Event {
   @@index([name])
   @@index([createdAt])
 }
+
+enum DashAgentType {
+  CLAUDE
+  HUMAN
+}
+
+enum DashAgentStatus {
+  IDLE
+  ACTIVE
+  BLOCKED
+}
+
+enum DashTaskStatus {
+  BACKLOG
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum DashOutputType {
+  TEXT
+  IMAGE
+  URL
+}
+
+model DashAgent {
+  id        String          @id @default(cuid())
+  name      String
+  role      String
+  type      DashAgentType
+  parentId  String?
+  parent    DashAgent?      @relation("DashAgentHierarchy", fields: [parentId], references: [id])
+  children  DashAgent[]     @relation("DashAgentHierarchy")
+  status    DashAgentStatus @default(IDLE)
+  tasks     DashTask[]
+  briefs    AgentBrief[]
+  outputs   DashOutput[]
+  createdAt DateTime        @default(now())
+}
+
+model DashTask {
+  id              String         @id @default(cuid())
+  title           String
+  description     String?
+  status          DashTaskStatus @default(BACKLOG)
+  assignedAgentId String
+  agent           DashAgent      @relation(fields: [assignedAgentId], references: [id])
+  output          DashOutput?
+  dueDate         DateTime?
+  createdAt       DateTime       @default(now())
+}
+
+model DashOutput {
+  id        String         @id @default(cuid())
+  taskId    String         @unique
+  task      DashTask       @relation(fields: [taskId], references: [id])
+  agentId   String
+  agent     DashAgent      @relation(fields: [agentId], references: [id])
+  content   String
+  type      DashOutputType
+  validated Boolean        @default(false)
+  createdAt DateTime       @default(now())
+}
+
+model AgentBrief {
+  id      String    @id @default(cuid())
+  agentId String
+  agent   DashAgent @relation(fields: [agentId], references: [id])
+  content String
+  sentAt  DateTime  @default(now())
+  sentBy  String
+}
