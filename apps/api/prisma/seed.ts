@@ -394,7 +394,7 @@ async function main() {
     ],
   });
 
-  await seedAgents();
+  await seedAgents(prisma);
 
   console.log('\n🎉 Seed complete!\n');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
