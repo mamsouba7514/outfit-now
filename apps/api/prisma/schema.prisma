@@ -1,0 +1,368 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Tier {
+  free
+  premium
+}
+
+enum Gender {
+  male
+  female
+  non_binary
+  prefer_not_to_say
+}
+
+enum ClothingCategory {
+  tops
+  bottoms
+  dresses
+  outerwear
+  shoes
+  accessories
+  bags
+  swimwear
+  activewear
+  underwear
+}
+
+enum Season {
+  spring
+  summer
+  autumn
+  winter
+  all
+}
+
+enum ScanStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum BriefStatus {
+  pending
+  generating
+  completed
+  failed
+}
+
+enum Occasion {
+  casual
+  work
+  formal
+  sport
+  evening
+  weekend
+  travel
+  date
+  party
+  beach
+  ceremony
+  gala
+  dinner
+  outdoor
+}
+
+enum ComposeMode {
+  new
+  dressing
+  mix
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String?
+  firstName            String
+  lastName             String
+  avatarUrl            String?
+  bio                  String?
+  tier                 Tier      @default(free)
+  gender               Gender?
+  stylePreferences     String[]
+  bodyType             String?
+  colorSeason          String?
+  onboardingCompleted  Boolean   @default(false)
+  appleId              String?   @unique
+  googleId             String?   @unique
+  stripeCustomerId     String?   @unique
+  pushToken            String?
+  exportRequestedAt    DateTime?
+  deletedAt            DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  refreshTokens   RefreshToken[]
+  dressingItems   DressingItem[]
+  briefs          Brief[]
+  subscriptions   Subscription[]
+  events          Event[]
+  posts           Post[]
+  likes           Like[]
+  comments        Comment[]
+  following       Follow[]  @relation("UserFollowing")
+  followers       Follow[]  @relation("UserFollowers")
+  avatar          Avatar?
+
+  @@index([email])
+  @@index([deletedAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model DressingItem {
+  id             String           @id @default(cuid())
+  userId         String
+  imageKey       String
+  thumbnailKey   String?
+  category       ClothingCategory?
+  primaryColor   String?
+  secondaryColors String[]
+  styleTags      String[]
+  brand          String?
+  season         Season[]
+  scanStatus     ScanStatus       @default(pending)
+  scanError      String?
+  scanDurationMs Int?
+  scanCostCents  Int?
+  vectorId       String?
+  wornCount      Int              @default(0)
+  lastWornAt     DateTime?
+  forSale        Boolean          @default(false)
+  askingPrice    Float?
+  deletedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfitItems OutfitItem[]
+
+  @@index([userId])
+  @@index([userId, category])
+  @@index([userId, deletedAt])
+}
+
+model Brief {
+  id           String      @id @default(cuid())
+  userId       String
+  status       BriefStatus @default(pending)
+  occasion     Occasion
+  styleNotes   String?
+  weatherNote  String?
+  colorNote    String?
+  excludeIds   String[]
+  styleTags    String[]    @default([])
+  budget       Float?
+  composeMode  ComposeMode @default(mix)
+  durationMs   Int?
+  totalCostCents Int?
+  errorMessage String?
+  completedAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfits Outfit[]
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+model Outfit {
+  id              String    @id @default(cuid())
+  briefId         String
+  score           Float     @default(0)
+  justification   String?
+  shoppingResults Json?
+  savedAt         DateTime?
+  wornAt          DateTime?
+  discardedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  brief  Brief        @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  items  OutfitItem[]
+  posts  Post[]
+
+  affiliateSuggestion AffiliateProductSuggestion?
+
+  @@index([briefId])
+}
+
+model OutfitItem {
+  id             String @id @default(cuid())
+  outfitId       String
+  dressingItemId String
+  role           String
+
+  outfit       Outfit       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  dressingItem DressingItem @relation(fields: [dressingItemId], references: [id], onDelete: Cascade)
+
+  @@unique([outfitId, dressingItemId])
+}
+
+model AffiliateProduct {
+  id          String   @id @default(cuid())
+  externalId  String   @unique
+  network     String
+  name        String
+  brand       String?
+  category    String?
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("EUR")
+  imageUrl    String
+  affiliateUrl String
+  vectorId    String?
+  isActive    Boolean  @default(true)
+  lastFetchedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  suggestions AffiliateProductSuggestion[]
+
+  @@index([network])
+  @@index([isActive])
+}
+
+model AffiliateProductSuggestion {
+  id               String  @id @default(cuid())
+  outfitId         String  @unique
+  productId        String
+  justification    String
+  score            Float
+  clickCount       Int     @default(0)
+  createdAt        DateTime @default(now())
+
+  outfit  Outfit           @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  product AffiliateProduct @relation(fields: [productId], references: [id])
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  userId    String
+  outfitId  String?
+  caption   String?   @db.VarChar(500)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outfit   Outfit?   @relation(fields: [outfitId], references: [id], onDelete: SetNull)
+  likes    Like[]
+  comments Comment[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  userId    String
+  postId    String
+  content   String    @db.VarChar(1000)
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Avatar {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  // Morphologie
+  bodyType      String   @default("regular")   // slim | athletic | regular | curvy | plus
+  skinTone      String   @default("medium")     // light | medium-light | medium | medium-dark | dark
+  hairColor     String   @default("brown")      // black | brown | blonde | red | grey | white | other
+  hairLength    String   @default("medium")     // short | medium | long | shaved
+  heightCm      Int?
+  // Photo & IA
+  photoKey      String?  // clé S3 du selfie uploadé
+  generatedKey  String?  // clé S3 de l'avatar IA généré
+  // Essayage virtuel (résultats cachés)
+  tryonCache    Json?    // { outfitId: imageUrl }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String    @unique
+  stripePriceId        String
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean   @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  payload   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([name])
+  @@index([createdAt])
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@outfit-now/ui",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "dependencies": {
+    "@outfit-now/design-tokens": "*"
+  }
+}

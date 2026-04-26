@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+.expo
+coverage
+**/prisma/seed.ts
+**/*.config.js
+**/*.config.ts
+packages/design-tokens/src
