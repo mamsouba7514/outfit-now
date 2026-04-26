@@ -11,3 +11,4 @@ coverage/
 .turbo/
 prisma/migrations/*.sql.bak
 .omc/
+.superpowers/
