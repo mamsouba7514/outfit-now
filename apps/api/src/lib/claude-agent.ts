@@ -18,6 +18,7 @@ export async function runClaudeAgent(
   brief: string,
   retries = 3,
 ): Promise<AgentRunResult> {
+  if (retries < 1) throw new Error('retries must be >= 1');
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const response = await anthropic.messages.create({
@@ -34,8 +35,8 @@ export async function runClaudeAgent(
       });
 
       const text = response.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as { type: 'text'; text: string }).text)
+        .filter((b): b is Anthropic.Messages.TextBlock => b.type === 'text')
+        .map((b) => b.text)
         .join('');
 
       return {
@@ -45,8 +46,10 @@ export async function runClaudeAgent(
       };
     } catch (err) {
       if (attempt === retries) throw err;
-      await new Promise((r) => setTimeout(r, 1000 * attempt));
+      console.warn(`[claude-agent] ${agentName} attempt ${attempt}/${retries} failed:`, err instanceof Error ? err.message : err);
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1) + Math.random() * 250));
     }
   }
+  // unreachable — retries >= 1 guard above ensures the loop always throws or returns
   throw new Error('Claude agent failed after retries');
 }
