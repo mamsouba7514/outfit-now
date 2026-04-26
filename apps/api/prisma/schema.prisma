@@ -404,6 +404,9 @@ model DashAgent {
   briefs    AgentBrief[]
   outputs   DashOutput[]
   createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([parentId])
 }
 
 model DashTask {
@@ -416,18 +419,25 @@ model DashTask {
   output          DashOutput?
   dueDate         DateTime?
   createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([assignedAgentId, status])
+  @@index([status])
 }
 
 model DashOutput {
   id        String         @id @default(cuid())
   taskId    String         @unique
-  task      DashTask       @relation(fields: [taskId], references: [id])
+  task      DashTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
   agentId   String
   agent     DashAgent      @relation(fields: [agentId], references: [id])
   content   String
   type      DashOutputType
   validated Boolean        @default(false)
   createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([agentId])
 }
 
 model AgentBrief {
@@ -437,4 +447,6 @@ model AgentBrief {
   content String
   sentAt  DateTime  @default(now())
   sentBy  String
+
+  @@index([agentId, sentAt])
 }
