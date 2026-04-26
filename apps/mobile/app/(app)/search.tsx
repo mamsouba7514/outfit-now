@@ -35,12 +35,18 @@ const CATEGORIES = [
   { label: 'Accessoires', value: 'accessories' },
 ];
 
-const BUDGETS = [
-  { label: 'Tout budget', value: undefined },
-  { label: '< 50 €', value: 50 },
-  { label: '< 100 €', value: 100 },
-  { label: '< 200 €', value: 200 },
-  { label: '< 500 €', value: 500 },
+type BudgetOption = {
+  label: string;
+  maxPrice?: number;
+  minPrice?: number;
+};
+const BUDGETS: BudgetOption[] = [
+  { label: 'Tout budget' },
+  { label: '< 50 €',   maxPrice: 50 },
+  { label: '< 100 €',  maxPrice: 100 },
+  { label: '< 200 €',  maxPrice: 200 },
+  { label: '< 500 €',  maxPrice: 500 },
+  { label: '500 €+',   minPrice: 500 },
 ];
 
 const SUGGESTIONS = [
@@ -132,6 +138,7 @@ export default function SearchScreen() {
   const [intent, setIntent]       = useState('');
   const [category, setCategory]   = useState<string | undefined>(undefined);
   const [maxPrice, setMaxPrice]   = useState<number | undefined>(undefined);
+  const [minPrice, setMinPrice]   = useState<number | undefined>(undefined);
 
   const inputRef = useRef<TextInput>(null);
   const resultsAnim = useRef(new Animated.Value(0)).current;
@@ -140,15 +147,16 @@ export default function SearchScreen() {
     getSearchHistory().then(setHistory).catch(() => {});
   }, []);
 
-  const doSearch = useCallback(async (q?: string, catOverride?: string | null, priceOverride?: number | null) => {
+  const doSearch = useCallback(async (q?: string, catOverride?: string | null, maxOverride?: number | null, minOverride?: number | null) => {
     const finalQuery = q ?? query;
     if (!finalQuery.trim()) return;
     const finalCat = catOverride !== undefined ? (catOverride ?? undefined) : category;
-    const finalPrice = priceOverride !== undefined ? (priceOverride ?? undefined) : maxPrice;
+    const finalMax = maxOverride !== undefined ? (maxOverride ?? undefined) : maxPrice;
+    const finalMin = minOverride !== undefined ? (minOverride ?? undefined) : minPrice;
     setLoading(true);
     setSearched(false);
     try {
-      const res = await searchStyle(finalQuery.trim(), { category: finalCat, maxPrice: finalPrice, maxResults: 12 });
+      const res = await searchStyle(finalQuery.trim(), { category: finalCat, maxPrice: finalMax, minPrice: finalMin, maxResults: 12 });
       setResults(res.results);
       setIntent(res.intent);
       setSearched(true);
@@ -161,7 +169,7 @@ export default function SearchScreen() {
     } finally {
       setLoading(false);
     }
-  }, [query, category, maxPrice]);
+  }, [query, category, maxPrice, minPrice]);
 
   const clearSearch = () => {
     setQuery('');
@@ -238,10 +246,11 @@ export default function SearchScreen() {
           {BUDGETS.map((b) => (
             <TouchableOpacity
               key={String(b.value)}
-              style={[styles.filterChip, maxPrice === b.value && styles.filterChipActive]}
+              style={[styles.filterChip, maxPrice === b.maxPrice && minPrice === b.minPrice && styles.filterChipActive]}
               onPress={() => {
-                setMaxPrice(b.value);
-                if (searched && query.trim()) void doSearch(query, category ?? null, b.value ?? null);
+                setMaxPrice(b.maxPrice);
+                setMinPrice(b.minPrice);
+                if (searched && query.trim()) void doSearch(query, category ?? null, b.maxPrice ?? null, b.minPrice ?? null);
               }}
             >
               <Text style={[styles.filterChipText, maxPrice === b.value && styles.filterChipTextActive]}>
