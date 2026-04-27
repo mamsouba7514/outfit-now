@@ -14,6 +14,7 @@ import { authRoutes } from './routes/auth.js';
 import { avatarRoutes } from './routes/avatar.js';
 import { briefRoutes } from './routes/briefs.js';
 import { dashAgentRoutes } from './routes/dash-agents.js';
+import { dashAuthRoutes } from './routes/dash-auth.js';
 import { dashOutputRoutes } from './routes/dash-outputs.js';
 import { dashTaskRoutes } from './routes/dash-tasks.js';
 import { dashWsRoutes } from './routes/dash-ws.js';
@@ -28,6 +29,7 @@ import { stylePassRoutes } from './routes/style-pass.js';
 declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    authenticateDashboard: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
@@ -68,6 +70,18 @@ export async function buildApp() {
     }
   });
 
+  app.decorate('authenticateDashboard', async function (request, reply) {
+    try {
+      await request.jwtVerify();
+      const payload = request.user as { role?: string };
+      if (payload.role !== 'admin') {
+        return reply.status(403).send({ message: 'Forbidden' });
+      }
+    } catch {
+      return reply.status(401).send({ message: 'Unauthorized' });
+    }
+  });
+
   await app.register(swagger, {
     openapi: {
       info: { title: 'Outfit Now API', version: '1.0.0', description: 'Outfit Now backend API' },
@@ -98,6 +112,7 @@ export async function buildApp() {
   await app.register(socialRoutes);
   await app.register(avatarRoutes);
   await app.register(stylePassRoutes);
+  await app.register(dashAuthRoutes);
   await app.register(dashAgentRoutes);
   await app.register(dashTaskRoutes);
   await app.register(dashOutputRoutes);

@@ -12,7 +12,7 @@ const briefSchema = z.object({
 });
 
 export async function dashAgentRoutes(app: FastifyInstance) {
-  const auth = { onRequest: [app.authenticate] };
+  const auth = { onRequest: [app.authenticateDashboard] };
 
   app.get('/v1/dash/agents', auth, async () => {
     const agents = await prisma.dashAgent.findMany({
@@ -40,7 +40,7 @@ export async function dashAgentRoutes(app: FastifyInstance) {
     '/v1/dash/agents/:id/brief',
     auth,
     async (request, reply) => {
-      const { id: userId } = request.user as { id: string };
+      const { sub: userId } = request.user as { sub: string };
       const body = briefSchema.safeParse(request.body);
       if (!body.success) return reply.status(400).send({ error: body.error.flatten() });
 

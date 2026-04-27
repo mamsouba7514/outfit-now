@@ -121,12 +121,12 @@ export async function stylePassRoutes(app: FastifyInstance) {
     }
 
     // Decreasing returns on SCAN after 5/day
-    let points = ENERGY_POINTS[action];
+    let points: number = ENERGY_POINTS[action];
     if (action === 'SCAN' && todayCount >= 5) points = 3;
 
     const [, updated] = await prisma.$transaction([
       prisma.energyTransaction.create({
-        data: { profileId: profile.id, action, points, refId },
+        data: { profileId: profile.id, action, points, refId: refId ?? null },
       }),
       prisma.stylePassProfile.update({
         where: { id: profile.id },
@@ -224,9 +224,9 @@ export async function stylePassRoutes(app: FastifyInstance) {
         data: {
           awardId,
           profileId: profile.id,
-          outfitId: body.data.outfitId,
-          imageKey: body.data.imageKey,
-          caption: body.data.caption,
+          outfitId: body.data.outfitId ?? null,
+          imageKey: body.data.imageKey ?? null,
+          caption: body.data.caption ?? null,
         },
       });
       await prisma.$transaction([

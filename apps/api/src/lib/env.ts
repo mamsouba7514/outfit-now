@@ -14,7 +14,7 @@ const envSchema = z.object({
   S3_SECRET_KEY: z.string(),
   S3_REGION: z.string().default('eu-west-3'),
   ANTHROPIC_API_KEY: z.string().optional(),
-  SERPAPI_KEY:  z.string().optional(),
+  SERPAPI_KEY: z.string().optional(),
   SERPER_API_KEY: z.string().optional(),
   PINECONE_API_KEY: z.string().optional(),
   PINECONE_INDEX: z.string().optional(),
@@ -25,6 +25,7 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   REPLICATE_API_TOKEN: z.string().optional(),
   FAL_KEY: z.string().optional(),
+  DASHBOARD_SECRET: z.string().min(16).default('outfit-now-dashboard-dev-secret-32c'),
 });
 
 export type Env = z.infer<typeof envSchema>;

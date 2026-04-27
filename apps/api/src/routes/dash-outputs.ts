@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 
 export async function dashOutputRoutes(app: FastifyInstance) {
-  const auth = { onRequest: [app.authenticate] };
+  const auth = { onRequest: [app.authenticateDashboard] };
 
   app.post<{ Params: { id: string } }>(
     '/v1/dash/outputs/:id/validate',

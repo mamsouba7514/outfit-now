@@ -7,8 +7,7 @@ const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@outfitnow.com');
-  const [password, setPassword] = useState('');
+  const [secret, setSecret] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -17,13 +16,13 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${BASE}/v1/auth/login`, {
+      const res = await fetch(`${BASE}/v1/dash/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ secret }),
       });
       if (!res.ok) {
-        setError('Email ou mot de passe incorrect');
+        setError('Secret incorrect');
         return;
       }
       const data = (await res.json()) as { accessToken: string };
@@ -48,21 +47,11 @@ export default function LoginPage() {
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-black/30 border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-violet"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Mot de passe</label>
+            <label className="block text-xs text-gray-400 mb-1">Secret</label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
               className="w-full bg-black/30 border border-brand-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-violet"
               required
             />

@@ -20,7 +20,7 @@ const listTasksSchema = z.object({
 });
 
 export async function dashTaskRoutes(app: FastifyInstance) {
-  const auth = { onRequest: [app.authenticate] };
+  const auth = { onRequest: [app.authenticateDashboard] };
 
   app.get('/v1/dash/tasks', auth, async (request) => {
     const query = listTasksSchema.parse(request.query);
