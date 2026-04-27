@@ -64,35 +64,45 @@ export default function AppLayout() {
         name="home"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size - 2} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="dressing"
         options={{
           title: 'Dressing',
-          tabBarIcon: ({ color, size }) => <Ionicons name="shirt-outline" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="shirt-outline" size={size - 2} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="stylist"
         options={{
           title: 'Stylist',
-          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="sparkles-outline" size={size - 2} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="social"
         options={{
           title: 'Social',
-          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size - 2} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size - 2} color={color} />
+          ),
         }}
       />
       <Tabs.Screen name="outfits" options={{ href: null }} />
@@ -102,6 +112,7 @@ export default function AppLayout() {
       <Tabs.Screen name="scan" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="scan-validation" options={{ href: null }} />
       <Tabs.Screen name="premium" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="style-pass" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
   );
 }
