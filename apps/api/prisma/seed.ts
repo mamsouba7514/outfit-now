@@ -1,5 +1,6 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
+import { seedAgents } from './seeds/agents.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 
@@ -42,7 +43,7 @@ const CLOTHING_IMAGES: Array<{
     primaryColor: 'bleu denim',
     secondaryColors: [],
     styleTags: ['casual', 'denim', 'slim'],
-    brand: 'Levi\'s',
+    brand: "Levi's",
     season: ['spring', 'summer', 'autumn', 'winter'],
   },
   {
@@ -102,7 +103,7 @@ const CLOTHING_IMAGES: Array<{
     primaryColor: 'marron',
     secondaryColors: ['cognac'],
     styleTags: ['loafers', 'smart casual', 'cuir'],
-    brand: 'Tod\'s',
+    brand: "Tod's",
     season: ['spring', 'summer', 'autumn'],
   },
   {
@@ -229,7 +230,10 @@ async function main() {
           scanCostCents: 2,
           vectorId: crypto.randomUUID(),
           wornCount: Math.floor(Math.random() * 8),
-          lastWornAt: Math.random() > 0.4 ? new Date(Date.now() - Math.random() * 30 * 24 * 3600 * 1000) : null,
+          lastWornAt:
+            Math.random() > 0.4
+              ? new Date(Date.now() - Math.random() * 30 * 24 * 3600 * 1000)
+              : null,
         },
       });
 
@@ -297,9 +301,14 @@ async function main() {
         },
       });
 
-      const whiteShirt = dressingItems.find((i) => i.imageKey.includes('white') && i.category === 'tops') ?? tops[1] ?? tops[0];
+      const whiteShirt =
+        dressingItems.find((i) => i.imageKey.includes('white') && i.category === 'tops') ??
+        tops[1] ??
+        tops[0];
       const navyBlazer = dressingItems.find((i) => i.primaryColor === 'navy') ?? outerwear[0];
-      const chinosItem = dressingItems.find((i) => i.category === 'bottoms' && i.primaryColor === 'kaki') ?? bottoms[0];
+      const chinosItem =
+        dressingItems.find((i) => i.category === 'bottoms' && i.primaryColor === 'kaki') ??
+        bottoms[0];
       const loafersItem = dressingItems.find((i) => i.primaryColor === 'marron') ?? shoes[0];
 
       const outfit2 = await prisma.outfit.create({
@@ -341,7 +350,7 @@ async function main() {
         name: 'T-shirt col rond en coton bio',
         brand: 'Uniqlo',
         category: 'tops',
-        price: 19.90,
+        price: 19.9,
         currency: 'EUR',
         imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80',
         affiliateUrl: 'https://www.uniqlo.com',
@@ -392,6 +401,8 @@ async function main() {
       })),
     ],
   });
+
+  await seedAgents(prisma);
 
   console.log('\n🎉 Seed complete!\n');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

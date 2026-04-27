@@ -32,6 +32,7 @@
     "@fastify/sensible": "^5.5.0",
     "@fastify/swagger": "^8.14.0",
     "@fastify/swagger-ui": "^4.0.1",
+    "@fastify/websocket": "^8.3.1",
     "@outfit-now/shared-types": "*",
     "@prisma/client": "^5.15.0",
     "bcryptjs": "^2.4.3",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.10",
+    "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^1.6.0",
     "prisma": "^5.15.0",
     "tsx": "^4.16.2",

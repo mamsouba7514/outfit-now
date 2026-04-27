@@ -24,5 +24,18 @@ module.exports = {
         '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: true }],
       },
     },
+    {
+      // Next.js dashboard: async event handlers + @/ path alias
+      files: ['apps/dashboard/**/*.tsx', 'apps/dashboard/**/*.ts'],
+      settings: {
+        'import/resolver': {
+          typescript: { project: 'apps/dashboard/tsconfig.json' },
+        },
+      },
+      rules: {
+        '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
+        '@typescript-eslint/require-await': 'off',
+      },
+    },
   ],
 };

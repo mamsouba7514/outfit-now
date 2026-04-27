@@ -10,14 +10,18 @@ import Fastify from 'fastify';
 import { env } from './lib/env.js';
 import { redis } from './lib/redis.js';
 import { affiliateRoutes } from './routes/affiliate.js';
-import { searchRoutes } from './routes/search.js';
 import { authRoutes } from './routes/auth.js';
 import { avatarRoutes } from './routes/avatar.js';
 import { briefRoutes } from './routes/briefs.js';
+import { dashAgentRoutes } from './routes/dash-agents.js';
+import { dashOutputRoutes } from './routes/dash-outputs.js';
+import { dashTaskRoutes } from './routes/dash-tasks.js';
+import { dashWsRoutes } from './routes/dash-ws.js';
 import { dressingRoutes } from './routes/dressing.js';
 import { meRoutes } from './routes/me.js';
-import { socialRoutes } from './routes/social.js';
 import { revenuecatRoutes } from './routes/revenuecat.js';
+import { searchRoutes } from './routes/search.js';
+import { socialRoutes } from './routes/social.js';
 import { stripeRoutes } from './routes/stripe.js';
 
 declare module 'fastify' {
@@ -37,9 +41,10 @@ export async function buildApp() {
   });
 
   await app.register(helmet, { contentSecurityPolicy: false });
-  const allowedOrigins = env.NODE_ENV === 'production'
-    ? (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean)
-    : true;
+  const allowedOrigins =
+    env.NODE_ENV === 'production'
+      ? (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean)
+      : true;
   await app.register(cors, { origin: allowedOrigins });
   await app.register(sensible);
 
@@ -91,6 +96,10 @@ export async function buildApp() {
   await app.register(searchRoutes);
   await app.register(socialRoutes);
   await app.register(avatarRoutes);
+  await app.register(dashAgentRoutes);
+  await app.register(dashTaskRoutes);
+  await app.register(dashOutputRoutes);
+  await app.register(dashWsRoutes);
 
   return app;
 }
