@@ -1,11 +1,40 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { AgentCard } from '@/components/AgentCard/AgentCard';
 import { OutputFeed } from '@/components/OutputFeed/OutputFeed';
 import { api } from '@/lib/api';
+import type { Agent, Task } from '@/lib/types';
 
-export const dynamic = 'force-dynamic';
+export default function HubPage() {
+  const router = useRouter();
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function HubPage() {
-  const [{ agents }, { tasks }] = await Promise.all([api.getAgents(), api.getTasks()]);
+  useEffect(() => {
+    const token = localStorage.getItem('dashboard_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    Promise.all([api.getAgents(), api.getTasks()])
+      .then(([{ agents: a }, { tasks: t }]) => {
+        setAgents(a);
+        setTasks(t);
+      })
+      .catch(() => router.push('/login'))
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+        Chargement…
+      </div>
+    );
 
   const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
   const inReview = tasks.filter((t) => t.status === 'IN_REVIEW').length;
@@ -18,7 +47,6 @@ export default async function HubPage() {
         <h1 className="text-2xl font-bold">Hub</h1>
         <p className="text-sm text-gray-500 mt-1">Vue d&apos;ensemble du projet Outfit Now</p>
       </div>
-
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Agents actifs', value: activeAgents },
@@ -31,7 +59,6 @@ export default async function HubPage() {
           </div>
         ))}
       </div>
-
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-4">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">Seniors</h2>
@@ -45,7 +72,10 @@ export default async function HubPage() {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             Outputs à valider
           </h2>
-          <OutputFeed tasks={tasks} />
+          <OutputFeed
+            tasks={tasks}
+            onValidated={() => api.getTasks().then(({ tasks: t }) => setTasks(t))}
+          />
         </div>
       </div>
     </div>

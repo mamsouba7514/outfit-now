@@ -1,8 +1,10 @@
-import type { FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
+import type { FastifyInstance } from 'fastify';
+import type { WebSocket } from 'ws';
+
 import { prisma } from '../lib/prisma.js';
 
-const clients = new Set<import('ws').WebSocket>();
+const clients = new Set<WebSocket>();
 
 export function broadcastAgentStatus(agentId: string, status: string) {
   const message = JSON.stringify({ type: 'agent_status', agentId, status });
@@ -14,16 +16,25 @@ export function broadcastAgentStatus(agentId: string, status: string) {
 export async function dashWsRoutes(app: FastifyInstance) {
   await app.register(websocket);
 
-  app.get('/v1/dash/ws', { websocket: true }, (socket) => {
+  app.get('/v1/dash/ws', { websocket: true }, (socket: WebSocket) => {
     clients.add(socket);
 
-    void prisma.dashAgent
+    prisma.dashAgent
       .findMany({ select: { id: true, status: true } })
       .then((agents) => {
-        socket.send(JSON.stringify({ type: 'init', agents }));
+        if (socket.readyState === 1) {
+          socket.send(JSON.stringify({ type: 'init', agents }));
+        }
+      })
+      .catch(() => {
+        // DB not available — skip init payload
       });
 
     socket.on('close', () => {
+      clients.delete(socket);
+    });
+
+    socket.on('error', () => {
       clients.delete(socket);
     });
   });
