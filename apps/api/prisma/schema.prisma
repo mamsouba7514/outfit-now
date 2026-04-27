@@ -111,6 +111,7 @@ model User {
   following       Follow[]  @relation("UserFollowing")
   followers       Follow[]  @relation("UserFollowers")
   avatar          Avatar?
+  stylePass       StylePassProfile?
 
   @@index([email])
   @@index([deletedAt])
@@ -366,6 +367,143 @@ model Event {
   @@index([name])
   @@index([createdAt])
 }
+
+// ── Style Pass ────────────────────────────────────────────────────────────────
+
+enum StyleRank {
+  NOVICE
+  STYLE
+  EXPERT
+  MAITRE
+  ICONE
+}
+
+enum EnergyAction {
+  SCAN
+  BRIEF
+  WEAR_CONFIRMED
+  COMMUNITY_VOTE
+  CAPSULE_COMPLETE
+  STREAK_BONUS
+  AWARD_SUBMISSION
+}
+
+enum AwardStatus {
+  OPEN
+  VOTING
+  CLOSED
+}
+
+enum StyleCardTier {
+  BRONZE
+  SILVER
+  GOLD
+  ICONIQUE
+}
+
+model StylePassProfile {
+  id             String     @id @default(cuid())
+  userId         String     @unique
+  totalEnergy    Int        @default(0)
+  rank           StyleRank  @default(NOVICE)
+  streakDays     Int        @default(0)
+  lastActivityAt DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions     EnergyTransaction[]
+  awardSubmissions AwardSubmission[]
+  votes            AwardVote[]
+  styleCards       StyleCard[]
+
+  @@index([rank])
+}
+
+model EnergyTransaction {
+  id        String       @id @default(cuid())
+  profileId String
+  action    EnergyAction
+  points    Int
+  refId     String?
+  createdAt DateTime     @default(now())
+
+  profile StylePassProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, createdAt])
+}
+
+model StyleAward {
+  id        String      @id @default(cuid())
+  occasion  String
+  weekStart DateTime
+  weekEnd   DateTime
+  status    AwardStatus @default(OPEN)
+  createdAt DateTime    @default(now())
+
+  submissions AwardSubmission[]
+
+  @@index([status])
+  @@index([weekStart])
+}
+
+model AwardSubmission {
+  id        String   @id @default(cuid())
+  awardId   String
+  profileId String
+  outfitId  String?
+  imageKey  String?
+  caption   String?  @db.VarChar(300)
+  voteCount Int      @default(0)
+  finalRank Int?
+  createdAt DateTime @default(now())
+
+  award   StyleAward       @relation(fields: [awardId], references: [id], onDelete: Cascade)
+  profile StylePassProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  votes   AwardVote[]
+  card    StyleCard?
+
+  @@unique([awardId, profileId])
+  @@index([awardId])
+  @@index([awardId, voteCount])
+}
+
+model AwardVote {
+  id           String   @id @default(cuid())
+  submissionId String
+  profileId    String
+  weight       Int      @default(1)
+  createdAt    DateTime @default(now())
+
+  submission AwardSubmission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  profile    StylePassProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, profileId])
+  @@index([profileId])
+}
+
+model StyleCard {
+  id           String        @id @default(cuid())
+  profileId    String
+  submissionId String?       @unique
+  tier         StyleCardTier
+  discountPct  Int
+  partner      String
+  promoCode    String        @unique
+  validUntil   DateTime
+  revealedAt   DateTime?
+  usedAt       DateTime?
+  createdAt    DateTime      @default(now())
+
+  profile    StylePassProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  submission AwardSubmission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  @@index([profileId])
+  @@index([profileId, revealedAt])
+}
+
+// ── Dashboard agents ──────────────────────────────────────────────────────────
 
 enum DashAgentType {
   CLAUDE

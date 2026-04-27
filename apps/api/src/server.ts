@@ -23,6 +23,7 @@ import { revenuecatRoutes } from './routes/revenuecat.js';
 import { searchRoutes } from './routes/search.js';
 import { socialRoutes } from './routes/social.js';
 import { stripeRoutes } from './routes/stripe.js';
+import { stylePassRoutes } from './routes/style-pass.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -96,6 +97,7 @@ export async function buildApp() {
   await app.register(searchRoutes);
   await app.register(socialRoutes);
   await app.register(avatarRoutes);
+  await app.register(stylePassRoutes);
   await app.register(dashAgentRoutes);
   await app.register(dashTaskRoutes);
   await app.register(dashOutputRoutes);
