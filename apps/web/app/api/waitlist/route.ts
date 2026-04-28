@@ -1,11 +1,14 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { addToWaitlist } from '@/lib/email';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const schema = z.object({
   email: z.string().email(),
+  website: z.string().max(0, 'bot_detected').optional(), // honeypot
 });
 
 export async function POST(req: NextRequest) {
@@ -18,6 +21,11 @@ export async function POST(req: NextRequest) {
 
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
+    const isBotTrap = parsed.error.issues.some((i) => i.message === 'bot_detected');
+    if (isBotTrap) {
+      // Return 200 to bots — don't reveal the trap
+      return NextResponse.json({ success: true });
+    }
     return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
   }
 

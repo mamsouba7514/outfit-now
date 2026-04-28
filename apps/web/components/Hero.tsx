@@ -130,6 +130,7 @@ function FloatingCards() {
 export default function Hero() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [honeypot, setHoneypot] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,7 +140,7 @@ export default function Hero() {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, website: honeypot }),
       });
       setStatus(res.ok ? 'success' : 'error');
     } catch {
@@ -205,6 +206,17 @@ export default function Hero() {
                   placeholder="ton@email.com"
                   required
                   className="flex-1 px-5 py-3.5 rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-blue)] focus:border-transparent text-sm"
+                />
+                {/* Honeypot — hidden from humans */}
+                <input
+                  type="text"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  className="absolute -left-[9999px] opacity-0 w-0 h-0 overflow-hidden"
                 />
                 <button
                   type="submit"

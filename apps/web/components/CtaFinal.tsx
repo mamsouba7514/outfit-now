@@ -8,6 +8,7 @@ export default function CtaFinal() {
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [honeypot, setHoneypot] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +18,7 @@ export default function CtaFinal() {
       const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, website: honeypot }),
       });
       setStatus(res.ok ? 'success' : 'error');
     } catch {
@@ -96,6 +97,17 @@ export default function CtaFinal() {
                 placeholder="ton@email.com"
                 required
                 className="flex-1 max-w-xs px-5 py-4 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-[var(--color-red)] text-sm"
+              />
+              {/* Honeypot — hidden from humans */}
+              <input
+                type="text"
+                name="website"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="absolute -left-[9999px] opacity-0 w-0 h-0 overflow-hidden"
               />
               <button
                 type="submit"
