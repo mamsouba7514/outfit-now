@@ -10,6 +10,7 @@ const piliers = [
     desc: 'SAM2 + CLIP pour numériser tes vêtements en 2 secondes. Ton dressing entier, organisé, consultable à tout moment.',
     bg: 'var(--color-blue-light)',
     accent: 'var(--color-blue)',
+    iconBg: '#BFDBFE',
     icon: '👗',
   },
   {
@@ -18,6 +19,7 @@ const piliers = [
     desc: "Tenues contextuelles adaptées à ton style, l'occasion, la météo. Shopping intelligent Sézane / Zalando / ASOS avec score de match.",
     bg: 'var(--color-green-light)',
     accent: 'var(--color-green)',
+    iconBg: '#A7F3D0',
     icon: '✨',
   },
   {
@@ -26,6 +28,7 @@ const piliers = [
     desc: 'PuLID-Flux : visualise chaque tenue sur un mannequin qui te ressemble. Ton visage préservé, ton corps représenté.',
     bg: 'var(--color-red-light)',
     accent: 'var(--color-red)',
+    iconBg: '#FECDD3',
     icon: '🪞',
   },
   {
@@ -34,6 +37,7 @@ const piliers = [
     desc: '5 rangs — de Novice à Icône. Débloque des Style Cards exclusives Bronze, Silver, Gold, Diamond avec avantages cumulatifs.',
     bg: '#EDE9FE',
     accent: '#7C3AED',
+    iconBg: '#DDD6FE',
     icon: '🏆',
   },
 ];
@@ -75,7 +79,7 @@ export default function Features() {
               <div className="flex items-start gap-5">
                 <div
                   className="text-2xl w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${p.accent}20` }}
+                  style={{ backgroundColor: p.iconBg }}
                 >
                   {p.icon}
                 </div>
