@@ -37,5 +37,18 @@ module.exports = {
         '@typescript-eslint/require-await': 'off',
       },
     },
+    {
+      // Next.js web: async event handlers + @/ path alias
+      files: ['apps/web/**/*.tsx', 'apps/web/**/*.ts'],
+      settings: {
+        'import/resolver': {
+          typescript: { project: 'apps/web/tsconfig.json' },
+        },
+      },
+      rules: {
+        '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: false }],
+        '@typescript-eslint/require-await': 'off',
+      },
+    },
   ],
 };
