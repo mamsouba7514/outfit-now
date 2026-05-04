@@ -1,4 +1,5 @@
 import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -13,15 +14,43 @@ import {
   View,
   StatusBar,
   Animated,
+  Image,
 } from 'react-native';
 
 import { useAuthStore } from '../../hooks/useAuth';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
+const logoLight = require('../../assets/logo-light.png') as number;
+
 const FIELDS = [
-  { key: 'firstName' as const, label: 'PRÉNOM', placeholder: 'Jean', secure: false, keyboard: 'default' as const },
-  { key: 'lastName' as const, label: 'NOM', placeholder: 'Dupont', secure: false, keyboard: 'default' as const },
-  { key: 'email' as const, label: 'EMAIL', placeholder: 'jean@email.com', secure: false, keyboard: 'email-address' as const },
-  { key: 'password' as const, label: 'MOT DE PASSE', placeholder: '8 caractères minimum', secure: true, keyboard: 'default' as const },
+  {
+    key: 'firstName' as const,
+    label: 'PRÉNOM',
+    placeholder: 'Jean',
+    secure: false,
+    keyboard: 'default' as const,
+  },
+  {
+    key: 'lastName' as const,
+    label: 'NOM',
+    placeholder: 'Dupont',
+    secure: false,
+    keyboard: 'default' as const,
+  },
+  {
+    key: 'email' as const,
+    label: 'EMAIL',
+    placeholder: 'jean@email.com',
+    secure: false,
+    keyboard: 'email-address' as const,
+  },
+  {
+    key: 'password' as const,
+    label: 'MOT DE PASSE',
+    placeholder: '8 caractères minimum',
+    secure: true,
+    keyboard: 'default' as const,
+  },
 ];
 
 export default function SignupScreen() {
@@ -98,14 +127,23 @@ export default function SignupScreen() {
     >
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
-        <Animated.View style={[styles.headerBlock, { opacity: headerOpacity, transform: [{ translateY: headerTranslateY }] }]}>
+        <Animated.View
+          style={[
+            styles.headerBlock,
+            { opacity: headerOpacity, transform: [{ translateY: headerTranslateY }] },
+          ]}
+        >
+          <Image source={logoLight} style={styles.logoImage} resizeMode="contain" />
           <Text style={styles.eyebrow}>CRÉER UN COMPTE</Text>
-          <Text style={styles.title}>Rejoins{'\n'}Outfit Now</Text>
-          <View style={styles.divider} />
         </Animated.View>
 
         {error ? (
-          <Animated.View style={[styles.errorBanner, { opacity: errorOpacity, transform: [{ translateY: errorTranslateY }] }]}>
+          <Animated.View
+            style={[
+              styles.errorBanner,
+              { opacity: errorOpacity, transform: [{ translateY: errorTranslateY }] },
+            ]}
+          >
             <Text style={styles.errorText}>{error}</Text>
           </Animated.View>
         ) : null}
@@ -113,7 +151,9 @@ export default function SignupScreen() {
         <View style={styles.form}>
           {FIELDS.map((field) => (
             <View key={field.key} style={styles.fieldBlock}>
-              <Text style={[styles.fieldLabel, activeField === field.key && styles.fieldLabelActive]}>
+              <Text
+                style={[styles.fieldLabel, activeField === field.key && styles.fieldLabelActive]}
+              >
                 {field.label}
               </Text>
               <TextInput
@@ -123,32 +163,49 @@ export default function SignupScreen() {
                 value={form[field.key]}
                 onChangeText={update(field.key)}
                 keyboardType={field.keyboard}
-                autoCapitalize={field.key === 'email' || field.key === 'password' ? 'none' : 'words'}
+                autoCapitalize={
+                  field.key === 'email' || field.key === 'password' ? 'none' : 'words'
+                }
                 secureTextEntry={field.secure}
                 autoCorrect={false}
                 keyboardAppearance="light"
                 onFocus={() => setActiveField(field.key)}
                 onBlur={() => setActiveField(null)}
               />
-              <View style={[styles.inputLine, activeField === field.key && styles.inputLineActive]} />
+              <View
+                style={[styles.inputLine, activeField === field.key && styles.inputLineActive]}
+              />
             </View>
           ))}
         </View>
 
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+        <Animated.View
+          style={[
+            styles.buttonWrap,
+            { transform: [{ scale: buttonScale }] },
+            loading && styles.buttonDisabled,
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSignup}
             onPressIn={onButtonPressIn}
             onPressOut={onButtonPressOut}
             disabled={loading}
             activeOpacity={1}
+            style={{ borderRadius: 9999, overflow: 'hidden' }}
           >
-            {loading ? (
-              <ActivityIndicator color={colors.neutral[950]} />
-            ) : (
-              <Text style={styles.buttonText}>S'INSCRIRE</Text>
-            )}
+            <LinearGradient
+              colors={['#1e40af', '#2563eb', '#00c4bf']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>S'INSCRIRE</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
 
@@ -172,25 +229,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[16],
     gap: spacing[8],
   },
-  headerBlock: { gap: spacing[3] },
+  headerBlock: { gap: spacing[3], alignItems: 'center' },
+  logoImage: {
+    width: 140,
+    height: 140,
+  },
   eyebrow: {
     fontSize: typography.fontSize.xs,
     color: colors.primary[400],
     letterSpacing: 4,
     fontWeight: typography.fontWeight.black,
-  },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    lineHeight: 40,
-  },
-  divider: {
-    width: 48,
-    height: 2,
-    backgroundColor: '#E8194A',
-    marginTop: spacing[2],
   },
   errorBanner: {
     backgroundColor: 'rgba(239,68,68,0.12)',
@@ -222,20 +270,23 @@ const styles = StyleSheet.create({
   },
   inputLine: { height: 1, backgroundColor: colors.neutral[800] },
   inputLineActive: { backgroundColor: colors.primary[400] },
-  button: {
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    alignItems: 'center',
+  buttonWrap: {
     borderRadius: 9999,
-    shadowColor: '#2448D8',
+    overflow: 'hidden',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 16,
     elevation: 8,
   },
+  button: {
+    paddingVertical: spacing[4],
+    alignItems: 'center',
+    borderRadius: 9999,
+  },
   buttonDisabled: { opacity: 0.6 },
   buttonText: {
-    color: colors.neutral[950],
+    color: '#FFFFFF',
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.black,
     letterSpacing: 3,

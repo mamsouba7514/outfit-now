@@ -1,4 +1,5 @@
 import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -12,9 +13,13 @@ import {
   ActivityIndicator,
   StatusBar,
   Animated,
+  Image,
 } from 'react-native';
 
 import { useAuthStore } from '../../hooks/useAuth';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
+const logoLight = require('../../assets/logo-light.png') as number;
 
 export default function LoginScreen() {
   const { login } = useAuthStore();
@@ -84,31 +89,42 @@ export default function LoginScreen() {
     >
       <StatusBar barStyle="dark-content" />
       <View style={styles.inner}>
-
         {/* Logo block with entrance animation */}
-        <Animated.View style={[styles.logoBlock, { opacity: logoOpacity, transform: [{ translateY: logoTranslateY }] }]}>
-          <Text style={styles.logoEyebrow}>FASHION AI</Text>
-          <Text style={styles.logoTitle}>OUTFIT{'\n'}NOW</Text>
-          <View style={styles.logoDivider} />
-          <Text style={styles.logoSub}>Ton styliste personnel</Text>
+        <Animated.View
+          style={[
+            styles.logoBlock,
+            { opacity: logoOpacity, transform: [{ translateY: logoTranslateY }] },
+          ]}
+        >
+          <Image source={logoLight} style={styles.logoImage} resizeMode="contain" />
         </Animated.View>
 
         {/* Inline error banner */}
         {error ? (
-          <Animated.View style={[styles.errorBanner, { opacity: errorOpacity, transform: [{ translateY: errorTranslateY }] }]}>
+          <Animated.View
+            style={[
+              styles.errorBanner,
+              { opacity: errorOpacity, transform: [{ translateY: errorTranslateY }] },
+            ]}
+          >
             <Text style={styles.errorText}>{error}</Text>
           </Animated.View>
         ) : null}
 
         <View style={styles.form}>
           <View style={styles.fieldBlock}>
-            <Text style={[styles.fieldLabel, activeField === 'email' && styles.fieldLabelActive]}>EMAIL</Text>
+            <Text style={[styles.fieldLabel, activeField === 'email' && styles.fieldLabelActive]}>
+              EMAIL
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="adresse@email.com"
               placeholderTextColor={colors.neutral[700]}
               value={email}
-              onChangeText={(v) => { setEmail(v); setError(''); }}
+              onChangeText={(v) => {
+                setEmail(v);
+                setError('');
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -120,39 +136,61 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.fieldBlock}>
-            <Text style={[styles.fieldLabel, activeField === 'password' && styles.fieldLabelActive]}>MOT DE PASSE</Text>
+            <Text
+              style={[styles.fieldLabel, activeField === 'password' && styles.fieldLabelActive]}
+            >
+              MOT DE PASSE
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="••••••••"
               placeholderTextColor={colors.neutral[700]}
               value={password}
-              onChangeText={(v) => { setPassword(v); setError(''); }}
+              onChangeText={(v) => {
+                setPassword(v);
+                setError('');
+              }}
               secureTextEntry
               keyboardAppearance="light"
               onFocus={() => setActiveField('password')}
               onBlur={() => setActiveField(null)}
             />
-            <View style={[styles.inputLine, activeField === 'password' && styles.inputLineActive]} />
+            <View
+              style={[styles.inputLine, activeField === 'password' && styles.inputLineActive]}
+            />
             <TouchableOpacity style={styles.forgotBtn} hitSlop={8}>
               <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+        <Animated.View
+          style={[
+            styles.buttonWrap,
+            { transform: [{ scale: buttonScale }] },
+            loading && styles.buttonDisabled,
+          ]}
+        >
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             onPressIn={onButtonPressIn}
             onPressOut={onButtonPressOut}
             disabled={loading}
             activeOpacity={1}
+            style={{ borderRadius: 9999, overflow: 'hidden' }}
           >
-            {loading ? (
-              <ActivityIndicator color={colors.neutral[950]} />
-            ) : (
-              <Text style={styles.buttonText}>SE CONNECTER</Text>
-            )}
+            <LinearGradient
+              colors={['#1e40af', '#2563eb', '#00c4bf']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>SE CONNECTER</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
 
@@ -179,33 +217,12 @@ const styles = StyleSheet.create({
     gap: spacing[8],
   },
   logoBlock: {
-    gap: spacing[2],
+    alignItems: 'center',
     marginBottom: spacing[4],
   },
-  logoEyebrow: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[400],
-    letterSpacing: 4,
-    fontWeight: typography.fontWeight.black,
-  },
-  logoTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['5xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    lineHeight: 52,
-    letterSpacing: -1,
-  },
-  logoDivider: {
-    width: 48,
-    height: 2,
-    backgroundColor: '#E8194A',
-    marginVertical: spacing[3],
-  },
-  logoSub: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    letterSpacing: 1,
+  logoImage: {
+    width: 220,
+    height: 220,
   },
   errorBanner: {
     backgroundColor: 'rgba(239,68,68,0.12)',
@@ -227,15 +244,16 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   fieldLabel: {
+    fontFamily: 'Poppins_500Medium',
     fontSize: typography.fontSize.xs,
     color: colors.neutral[500],
     letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
   },
   fieldLabelActive: {
     color: colors.primary[400],
   },
   input: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: typography.fontSize.base,
     color: colors.neutral[0],
     paddingVertical: spacing[2],
@@ -257,25 +275,28 @@ const styles = StyleSheet.create({
     color: colors.neutral[500],
     letterSpacing: 0.5,
   },
-  button: {
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    alignItems: 'center',
+  buttonWrap: {
     marginTop: spacing[2],
     borderRadius: 9999,
-    shadowColor: '#2448D8',
+    overflow: 'hidden',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 16,
     elevation: 8,
   },
+  button: {
+    paddingVertical: spacing[4],
+    alignItems: 'center',
+    borderRadius: 9999,
+  },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: colors.neutral[950],
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.black,
     letterSpacing: 3,
   },
   linkButton: {
@@ -289,8 +310,8 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
   },
   linkAccent: {
+    fontFamily: 'Poppins_600SemiBold',
     color: colors.primary[400],
     fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.semibold,
   },
 });
