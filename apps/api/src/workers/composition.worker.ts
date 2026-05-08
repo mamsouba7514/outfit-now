@@ -1,9 +1,10 @@
 import { Worker } from 'bullmq';
 
 import { prisma } from '../lib/prisma.js';
-import { COMPOSITION_QUEUE, type CompositionJobData } from '../lib/queue.js';
 import { sendPushNotification } from '../lib/pushNotifications.js';
+import { COMPOSITION_QUEUE, type CompositionJobData } from '../lib/queue.js';
 import { redis } from '../lib/redis.js';
+import { awardEnergy } from '../routes/style-pass.js';
 import { ClaudeStylingProvider } from '../services/composition/ClaudeStylingProvider.js';
 import { computeStyleProfile } from '../services/styleProfile.js';
 
@@ -24,7 +25,7 @@ const worker = new Worker<CompositionJobData>(
       const [brief, user, styleProfile] = await Promise.all([
         prisma.brief.findUnique({ where: { id: briefId } }),
         prisma.user.findUnique({ where: { id: userId }, select: { gender: true } }),
-        computeStyleProfile(userId),   // Karl's memory of this user
+        computeStyleProfile(userId), // Karl's memory of this user
       ]);
       if (!brief) throw new Error(`Brief ${briefId} not found`);
 
@@ -40,7 +41,7 @@ const worker = new Worker<CompositionJobData>(
         take: 200, // context window cap
       });
 
-      if (dressing.length < 3) {
+      if (brief.composeMode !== 'new' && dressing.length < 3) {
         await prisma.brief.update({
           where: { id: briefId },
           data: {
@@ -62,7 +63,7 @@ const worker = new Worker<CompositionJobData>(
           styleTags: brief.styleTags,
           budget: brief.budget,
           gender: user?.gender ?? null,
-          styleProfile,               // Karl's memory of this user's style
+          styleProfile, // Karl's memory of this user's style
         },
         3,
       );
@@ -88,7 +89,7 @@ const worker = new Worker<CompositionJobData>(
               score: proposal.score,
               justification: proposal.justification,
               shoppingResults: proposal.shoppingResults
-                ? JSON.parse(JSON.stringify(proposal.shoppingResults))
+                ? (JSON.parse(JSON.stringify(proposal.shoppingResults)) as object)
                 : undefined,
             },
           });
@@ -112,6 +113,8 @@ const worker = new Worker<CompositionJobData>(
           },
         });
       });
+
+      await awardEnergy(userId, 'BRIEF', briefId);
 
       await prisma.event.create({
         data: {

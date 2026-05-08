@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '@outfit-now/design-tokens';
-import type { DressingItem } from '@outfit-now/shared-types';
+import { spacing } from '@outfit-now/design-tokens';
+import type { ClothingCategory, DressingItem } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useCallback, useState } from 'react';
 import {
@@ -14,23 +15,36 @@ import {
   RefreshControl,
   Dimensions,
   StatusBar,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 
-import { CategoryFilter } from '../../../components/ui/CategoryFilter';
+import { useAppTheme } from '../../../contexts/ThemeContext';
 import { useDressingStore } from '../../../hooks/useDressing';
 import { getDressingItems } from '../../../lib/dressing';
 
-const ITEM_SIZE = (Dimensions.get('window').width - spacing[6] * 2 - spacing[3]) / 2;
+const WIN_WIDTH = Dimensions.get('window').width;
+const ITEM_SIZE = (WIN_WIDTH - spacing[5] * 2 - 8) / 3;
+
+const CATEGORIES = [
+  { label: 'Tout', value: null },
+  { label: 'Hauts', value: 'tops' },
+  { label: 'Bas', value: 'bottoms' },
+  { label: 'Robes', value: 'dresses' },
+  { label: 'Chaussures', value: 'shoes' },
+  { label: 'Accessoires', value: 'accessories' },
+];
 
 export default function DressingScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { items, total, hasMore, isLoading, categoryFilter, loadItems, setCategoryFilter } =
     useDressingStore();
 
-  // ── Resale tab state ───────────────────────────────────────────────────────
   const [tab, setTab] = useState<'dressing' | 'sale'>('dressing');
   const [saleItems, setSaleItems] = useState<DressingItem[]>([]);
   const [saleLoading, setSaleLoading] = useState(false);
+  const [search, setSearch] = useState('');
 
   async function loadSaleItems() {
     setSaleLoading(true);
@@ -59,14 +73,16 @@ export default function DressingScreen() {
   function renderItem({ item }: { item: DressingItem }) {
     return (
       <Link href={`/(app)/dressing/${item.id}` as never} asChild>
-        <TouchableOpacity style={styles.itemCard} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[styles.itemCard, { backgroundColor: theme.colors.surface }]}
+          activeOpacity={0.85}
+        >
           <Image
             source={{ uri: item.imageUrl }}
             style={styles.itemImage}
             contentFit="cover"
             transition={200}
           />
-          {/* For-sale badge */}
           {item.forSale && (
             <View style={styles.saleBadge}>
               <Text style={styles.saleBadgeText}>
@@ -74,16 +90,6 @@ export default function DressingScreen() {
               </Text>
             </View>
           )}
-          <View style={styles.itemMeta}>
-            <Text style={styles.itemColor} numberOfLines={1}>
-              {item.primaryColor}
-            </Text>
-            {item.styleTags[0] && (
-              <Text style={styles.itemTag} numberOfLines={1}>
-                {item.styleTags[0].toUpperCase()}
-              </Text>
-            )}
-          </View>
         </TouchableOpacity>
       </Link>
     );
@@ -92,7 +98,13 @@ export default function DressingScreen() {
   function renderSaleItem({ item }: { item: DressingItem }) {
     return (
       <Link href={`/(app)/dressing/${item.id}` as never} asChild>
-        <TouchableOpacity style={styles.saleCard} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[
+            styles.saleCard,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          ]}
+          activeOpacity={0.85}
+        >
           <Image
             source={{ uri: item.imageUrl }}
             style={styles.saleImage}
@@ -101,10 +113,11 @@ export default function DressingScreen() {
           />
           <View style={styles.saleCardInfo}>
             <View style={styles.saleCardLeft}>
-              <Text style={styles.saleCardCategory}>
-                {(item.category ?? '').toUpperCase()}
-              </Text>
-              <Text style={styles.saleCardColor} numberOfLines={1}>
+              <Text style={styles.saleCardCategory}>{(item.category ?? '').toUpperCase()}</Text>
+              <Text
+                style={[styles.saleCardColor, { color: theme.colors.textPrimary }]}
+                numberOfLines={1}
+              >
                 {item.primaryColor}
               </Text>
               {item.brand && (
@@ -132,92 +145,140 @@ export default function DressingScreen() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+  const headerColors: [string, string, string] = theme.dark
+    ? ['#0f172a', '#0a0f1e', '#0a0f1e']
+    : ['#dbeafe', '#f8faff', '#ffffff'];
 
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.eyebrow}>MON</Text>
-          <Text style={styles.title}>DRESSING</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[3] }}>
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.colors.statusBar} />
+
+      {/* Header */}
+      <LinearGradient
+        colors={headerColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Garde-robe</Text>
           <TouchableOpacity
-            onPress={() => router.push('/(app)/search' as never)}
-            style={styles.searchIconBtn}
+            style={[
+              styles.filterIconBtn,
+              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+            ]}
             hitSlop={8}
           >
-            <Ionicons name="search-outline" size={22} color={colors.primary[500]} />
+            <Ionicons name="options-outline" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{tab === 'dressing' ? total : saleItems.length}</Text>
-          <Text style={styles.countLabel}>{tab === 'dressing' ? 'PIÈCES' : 'EN VENTE'}</Text>
         </View>
-        </View>
+      </LinearGradient>
+
+      {/* Search bar */}
+      <View
+        style={[
+          styles.searchBar,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+        ]}
+      >
+        <Ionicons name="search-outline" size={18} color={theme.colors.textMuted} />
+        <TextInput
+          style={[styles.searchInput, { color: theme.colors.textPrimary }]}
+          placeholder="Rechercher une pièce"
+          placeholderTextColor={theme.colors.textMuted}
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+        />
       </View>
 
-      {/* ── Tab toggle ────────────────────────────────────────────────────── */}
-      <View style={styles.tabRow}>
+      {/* Category chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsRow}
+      >
+        {CATEGORIES.map((cat) => {
+          const active = categoryFilter === cat.value;
+          return (
+            <TouchableOpacity
+              key={cat.label}
+              style={[
+                styles.chip,
+                { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                active && styles.chipActive,
+              ]}
+              onPress={() => setCategoryFilter(active ? null : (cat.value as ClothingCategory))}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: theme.colors.textMuted },
+                  active && styles.chipTextActive,
+                ]}
+              >
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Count + sort row */}
+      <View style={styles.countRow}>
+        <Text style={[styles.countText, { color: theme.colors.textPrimary }]}>
+          {tab === 'dressing' ? total : saleItems.length} pièces
+        </Text>
         <TouchableOpacity
-          style={[styles.tabBtn, tab === 'dressing' && styles.tabBtnActive]}
-          onPress={() => setTab('dressing')}
-          activeOpacity={0.8}
+          style={[styles.tabBtnSale, tab === 'sale' && styles.tabBtnSaleActive]}
+          onPress={() => setTab(tab === 'dressing' ? 'sale' : 'dressing')}
         >
-          <Text style={[styles.tabBtnText, tab === 'dressing' && styles.tabBtnTextActive]}>
-            MON DRESSING
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabBtn, tab === 'sale' && styles.tabBtnActive]}
-          onPress={() => setTab('sale')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.tabBtnText, tab === 'sale' && styles.tabBtnTextActive]}>
-            EN VENTE
+          <Text style={[styles.tabBtnSaleText, tab === 'sale' && styles.tabBtnSaleTextActive]}>
+            {tab === 'sale' ? 'EN VENTE' : 'Trier ↓'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* ── Dressing tab ──────────────────────────────────────────────────── */}
+      {/* Dressing grid */}
       {tab === 'dressing' && (
-        <>
-          <CategoryFilter selected={categoryFilter} onSelect={setCategoryFilter} />
-          <FlatList
-            data={items}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            numColumns={2}
-            contentContainerStyle={styles.grid}
-            columnWrapperStyle={styles.row}
-            onEndReached={onEndReached}
-            onEndReachedThreshold={0.4}
-            refreshControl={
-              <RefreshControl
-                refreshing={isLoading && items.length === 0}
-                onRefresh={() => loadItems(true)}
-                tintColor={colors.primary[400]}
-              />
-            }
-            ListEmptyComponent={
-              !isLoading ? (
-                <View style={styles.empty}>
-                  <Text style={styles.emptyAccent}>VIDE</Text>
-                  <Text style={styles.emptyText}>Ton dressing est vide.</Text>
-                  <Text style={styles.emptySubText}>Scanne ta première pièce pour commencer.</Text>
-                </View>
-              ) : null
-            }
-            ListFooterComponent={
-              isLoading && items.length > 0 ? (
-                <ActivityIndicator style={{ marginVertical: spacing[6] }} color={colors.primary[400]} />
-              ) : null
-            }
-          />
-        </>
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          numColumns={3}
+          contentContainerStyle={styles.grid}
+          columnWrapperStyle={styles.row}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && items.length === 0}
+              onRefresh={() => loadItems(true)}
+              tintColor="#00C4BF"
+            />
+          }
+          ListEmptyComponent={
+            !isLoading ? (
+              <View style={styles.empty}>
+                <Text style={[styles.emptyText, { color: theme.colors.textMuted }]}>
+                  Ton dressing est vide.
+                </Text>
+                <Text style={[styles.emptySubText, { color: theme.colors.textMuted }]}>
+                  Scanne ta première pièce pour commencer.
+                </Text>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            isLoading && items.length > 0 ? (
+              <ActivityIndicator style={{ marginVertical: spacing[6] }} color="#00C4BF" />
+            ) : null
+          }
+        />
       )}
 
-      {/* ── En vente tab ──────────────────────────────────────────────────── */}
+      {/* En vente tab */}
       {tab === 'sale' && (
         <FlatList
           data={saleItems}
@@ -228,15 +289,16 @@ export default function DressingScreen() {
             <RefreshControl
               refreshing={saleLoading}
               onRefresh={loadSaleItems}
-              tintColor={colors.primary[400]}
+              tintColor="#00C4BF"
             />
           }
           ListEmptyComponent={
             !saleLoading ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyAccent}>◎</Text>
-                <Text style={styles.emptyText}>Aucune pièce en vente.</Text>
-                <Text style={styles.emptySubText}>
+                <Text style={[styles.emptyText, { color: theme.colors.textMuted }]}>
+                  Aucune pièce en vente.
+                </Text>
+                <Text style={[styles.emptySubText, { color: theme.colors.textMuted }]}>
                   Ouvre une pièce et appuie sur "METTRE EN VENTE".
                 </Text>
               </View>
@@ -244,8 +306,8 @@ export default function DressingScreen() {
           }
           ListHeaderComponent={
             saleItems.length > 0 ? (
-              <View style={styles.saleHeader}>
-                <Text style={styles.saleHeaderText}>
+              <View style={[styles.saleHeader, { borderBottomColor: theme.colors.border }]}>
+                <Text style={[styles.saleHeaderText, { color: theme.colors.textMuted }]}>
                   Copie le lien ou partage sur Vinted / Leboncoin
                 </Text>
               </View>
@@ -254,153 +316,187 @@ export default function DressingScreen() {
         />
       )}
 
-      {/* ── FAB (scan) — visible on dressing tab only ─────────────────────── */}
-      {tab === 'dressing' && (
-        <TouchableOpacity
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fabWrap}
+        onPress={() => router.push('/(app)/scan' as never)}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={['#1e40af', '#2563eb', '#00c4bf']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={styles.fab}
-          onPress={() => router.push('/(app)/scan' as never)}
-          activeOpacity={0.85}
         >
           <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
-      )}
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral[950] },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
 
-  // ── Header ───────────────────────────────────────────────────────────────
+  // Header
+  headerGradient: {
+    paddingTop: spacing[16],
+    paddingBottom: spacing[3],
+  },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[16],
-    paddingBottom: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[900],
-  },
-  eyebrow: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[500],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
+    paddingHorizontal: spacing[5],
   },
   title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    letterSpacing: -0.5,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 22,
+    color: '#0D1B2A',
   },
-  countBadge: { alignItems: 'flex-end' },
-  countText: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.black,
-    color: colors.primary[400],
-    lineHeight: 28,
-  },
-  countLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
+  filterIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8faff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 
-  // ── Tab toggle ───────────────────────────────────────────────────────────
-  tabRow: {
+  // Search
+  searchBar: {
     flexDirection: 'row',
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    gap: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[900],
-  },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: spacing[2],
     alignItems: 'center',
+    marginHorizontal: spacing[5],
+    marginBottom: spacing[3],
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: '#E2E8F0',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    gap: spacing[2],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 14,
+    color: '#0D1B2A',
+    paddingVertical: 0,
+  },
+
+  // Category chips
+  chipsRow: {
+    paddingHorizontal: spacing[5],
+    paddingBottom: spacing[3],
+    gap: spacing[2],
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 9999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  chipActive: {
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
+  },
+  chipText: {
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13,
+    color: '#A0AEC0',
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Count row
+  countRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[5],
+    paddingBottom: spacing[3],
+  },
+  countText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: '#0D1B2A',
+  },
+  tabBtnSale: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 9999,
   },
-  tabBtnActive: {
-    borderColor: colors.primary[600],
-    backgroundColor: 'rgba(36,72,216,0.08)',
+  tabBtnSaleActive: {
+    backgroundColor: '#dbeafe',
   },
-  tabBtnText: {
-    fontSize: 10,
-    color: colors.neutral[600],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
+  tabBtnSaleText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 12,
+    color: '#00C4BF',
   },
-  tabBtnTextActive: {
-    color: colors.primary[400],
+  tabBtnSaleTextActive: {
+    color: '#00C4BF',
   },
 
-  // ── Dressing grid ────────────────────────────────────────────────────────
-  grid: { padding: spacing[6], paddingTop: spacing[4] },
-  row: { gap: spacing[3], marginBottom: spacing[3] },
+  // Grid
+  grid: { paddingHorizontal: spacing[5], paddingBottom: spacing[20] },
+  row: { gap: 4, marginBottom: 4 },
   itemCard: {
     width: ITEM_SIZE,
-    backgroundColor: colors.neutral[900],
+    backgroundColor: '#f8faff',
     overflow: 'hidden',
-    borderRadius: 14,
+    borderRadius: 12,
   },
   itemImage: { width: ITEM_SIZE, height: ITEM_SIZE * 1.3 },
-  itemMeta: { padding: spacing[3], gap: 2 },
-  itemColor: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[300],
-    fontWeight: typography.fontWeight.medium,
-    textTransform: 'capitalize',
-  },
-  itemTag: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 1,
-  },
   saleBadge: {
     position: 'absolute',
     top: spacing[2],
     right: spacing[2],
-    backgroundColor: colors.primary[600],
+    backgroundColor: '#00C4BF',
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
+    borderRadius: 6,
   },
   saleBadgeText: {
+    fontFamily: 'Poppins_700Bold',
     fontSize: 9,
-    color: colors.neutral[950],
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 0.5,
+    color: '#FFFFFF',
   },
 
-  // ── Sale list ─────────────────────────────────────────────────────────────
-  saleList: { padding: spacing[6], gap: spacing[3] },
+  // Sale list
+  saleList: { padding: spacing[5], gap: spacing[3] },
   saleHeader: {
     marginBottom: spacing[3],
     paddingBottom: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[900],
+    borderBottomColor: '#E2E8F0',
   },
   saleHeaderText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[600],
-    letterSpacing: 0.5,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    color: '#A0AEC0',
   },
   saleCard: {
     flexDirection: 'row',
-    backgroundColor: colors.neutral[900],
+    backgroundColor: '#f8faff',
     overflow: 'hidden',
     marginBottom: spacing[3],
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  saleImage: {
-    width: 90,
-    height: 110,
-  },
+  saleImage: { width: 90, height: 110 },
   saleCardInfo: {
     flex: 1,
     flexDirection: 'row',
@@ -409,25 +505,27 @@ const styles = StyleSheet.create({
   },
   saleCardLeft: { flex: 1, gap: 4 },
   saleCardCategory: {
+    fontFamily: 'Poppins_700Bold',
     fontSize: 9,
-    color: colors.primary[500],
+    color: '#00C4BF',
     letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
   },
   saleCardColor: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[0],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: '#0D1B2A',
     textTransform: 'capitalize',
   },
   saleCardBrand: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#A0AEC0',
     fontStyle: 'italic',
   },
   saleCardTag: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: 9,
-    color: colors.neutral[700],
+    color: '#A0AEC0',
     letterSpacing: 1,
   },
   saleCardRight: {
@@ -436,78 +534,69 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   saleCardPrice: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.black,
-    color: colors.primary[400],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#00C4BF',
     lineHeight: 28,
   },
   saleCardCurrency: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: 9,
-    color: colors.neutral[600],
+    color: '#A0AEC0',
     letterSpacing: 2,
   },
   saleCardNprice: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: 10,
-    color: colors.neutral[600],
-    letterSpacing: 1,
+    color: '#A0AEC0',
     fontStyle: 'italic',
   },
 
-  // ── Empty state ──────────────────────────────────────────────────────────
+  // Empty
   empty: {
     alignItems: 'center',
     paddingTop: spacing[20],
     gap: spacing[2],
   },
-  emptyAccent: {
-    fontSize: typography.fontSize['4xl'],
-    fontWeight: typography.fontWeight.black,
-    color: colors.neutral[900],
-    letterSpacing: 8,
-    marginBottom: spacing[2],
-  },
   emptyText: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[400],
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 16,
+    color: '#A0AEC0',
   },
   emptySubText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[700],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 13,
+    color: '#A0AEC0',
     textAlign: 'center',
     paddingHorizontal: spacing[8],
   },
 
-  searchIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(36,72,216,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // ── FAB ──────────────────────────────────────────────────────────────────
-  fab: {
+  // FAB
+  fabWrap: {
     position: 'absolute',
     bottom: spacing[8],
-    right: spacing[6],
+    right: spacing[5],
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2448D8',
+    overflow: 'hidden',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 16,
     elevation: 10,
   },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fabIcon: {
+    fontFamily: 'Poppins_700Bold',
     fontSize: 26,
-    color: colors.neutral[950],
+    color: '#FFFFFF',
     lineHeight: 30,
-    fontWeight: typography.fontWeight.bold,
   },
 });

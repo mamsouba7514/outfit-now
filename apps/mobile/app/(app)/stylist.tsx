@@ -1,12 +1,12 @@
-import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { Ionicons } from '@expo/vector-icons';
+import { spacing } from '@outfit-now/design-tokens';
 import type { ComposeMode, Occasion, Outfit, ShoppingResult } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Linking } from 'react-native';
 import { useRef, useState, useEffect } from 'react';
-
-import { getStyleProfile, type StyleProfile } from '../../lib/styleProfile';
 import {
+  Linking,
   Dimensions,
   FlatList,
   ScrollView,
@@ -17,46 +17,67 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  TextInput,
 } from 'react-native';
 
-import { createBrief, getBrief, outfitAction } from '../../lib/briefs';
 import { useWeather } from '../../hooks/useWeather';
+import { createBrief, getBrief, outfitAction } from '../../lib/briefs';
+import { getStyleProfile, type StyleProfile } from '../../lib/styleProfile';
 
 const CATEGORY_FR: Record<string, string> = {
-  tops: 'Hauts', bottoms: 'Bas', dresses: 'Robes', outerwear: 'Manteaux',
-  shoes: 'Chaussures', accessories: 'Accessoires', bags: 'Sacs',
-  swimwear: 'Maillots', activewear: 'Sport', underwear: 'Sous-vêt.',
+  tops: 'Hauts',
+  bottoms: 'Bas',
+  dresses: 'Robes',
+  outerwear: 'Manteaux',
+  shoes: 'Chaussures',
+  accessories: 'Accessoires',
+  bags: 'Sacs',
+  swimwear: 'Maillots',
+  activewear: 'Sport',
+  underwear: 'Sous-vêt.',
 };
 
 type Step = 'form' | 'waiting' | 'results';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const OCCASIONS: { label: string; value: Occasion }[] = [
-  { label: 'Casual', value: 'casual' },
-  { label: 'Travail', value: 'work' },
-  { label: 'Soirée', value: 'evening' },
-  { label: 'Formel', value: 'formal' },
-  { label: 'Sport', value: 'sport' },
-  { label: 'Weekend', value: 'weekend' },
-  { label: 'Voyage', value: 'travel' },
-  { label: 'Rendez-vous', value: 'date' },
-  { label: 'Fête', value: 'party' },
-  { label: 'Plage', value: 'beach' },
-  { label: 'Cérémonie', value: 'ceremony' },
-  { label: 'Gala', value: 'gala' },
-  { label: 'Dîner', value: 'dinner' },
-  { label: 'Outdoor', value: 'outdoor' },
+const OCCASIONS: { label: string; value: Occasion; icon: string }[] = [
+  { label: 'Quotidien', value: 'casual', icon: '📅' },
+  { label: 'Travail', value: 'work', icon: '💼' },
+  { label: 'Soirée', value: 'evening', icon: '🥂' },
+  { label: 'Sport', value: 'sport', icon: '👟' },
+  { label: 'Weekend', value: 'weekend', icon: '🌅' },
+  { label: 'Voyage', value: 'travel', icon: '✈️' },
+  { label: 'Rendez-vous', value: 'date', icon: '💝' },
+  { label: 'Fête', value: 'party', icon: '🎉' },
+  { label: 'Plage', value: 'beach', icon: '🏖️' },
+  { label: 'Cérémonie', value: 'ceremony', icon: '🎗️' },
+  { label: 'Gala', value: 'gala', icon: '✨' },
+  { label: 'Dîner', value: 'dinner', icon: '🍽️' },
+  { label: 'Outdoor', value: 'outdoor', icon: '🌿' },
+  { label: 'Formel', value: 'formal', icon: '🎩' },
 ];
 
 const STYLE_CHIPS = [
-  'Minimaliste', 'Casual', 'Élégant', 'Streetwear',
-  'Bohème', 'Sportif', 'Chic', 'Rock',
+  'Minimaliste',
+  'Casual',
+  'Élégant',
+  'Streetwear',
+  'Bohème',
+  'Sportif',
+  'Chic',
+  'Rock',
 ];
 
 type GenerationTier = 'standard' | 'premium' | 'luxe';
 
-const TIERS: { value: GenerationTier; roman: string; label: string; tagline: string; features: string[] }[] = [
+const TIERS: {
+  value: GenerationTier;
+  roman: string;
+  label: string;
+  tagline: string;
+  features: string[];
+}[] = [
   {
     value: 'standard',
     roman: 'I',
@@ -69,14 +90,22 @@ const TIERS: { value: GenerationTier; roman: string; label: string; tagline: str
     roman: 'II',
     label: 'PREMIUM',
     tagline: 'Curation approfondie & personnalisée',
-    features: ['Analyse poussée des pièces', 'Conseils de style détaillés', 'Meilleures combinaisons'],
+    features: [
+      'Analyse poussée des pièces',
+      'Conseils de style détaillés',
+      'Meilleures combinaisons',
+    ],
   },
   {
     value: 'luxe',
     roman: 'III',
     label: 'LUXE',
     tagline: 'Expérience stylist haut de gamme',
-    features: ['Curation experte sans compromis', 'Storytelling de chaque tenue', 'Résultats premium garantis'],
+    features: [
+      'Curation experte sans compromis',
+      'Storytelling de chaque tenue',
+      'Résultats premium garantis',
+    ],
   },
 ];
 
@@ -94,6 +123,9 @@ const BUDGET_OPTIONS: { label: string; value: number | null }[] = [
   { label: '500 €+', value: 1000 },
 ];
 
+// 4-step stepper labels for the form
+const FORM_STEPS = ['Occasion', 'Style', 'Source', 'Budget'];
+
 function ShoppingSection({ results }: { results: ShoppingResult[] }) {
   return (
     <View style={styles.shoppingSection}>
@@ -110,16 +142,59 @@ function ShoppingSection({ results }: { results: ShoppingResult[] }) {
             onPress={() => product.link && Linking.openURL(product.link)}
             activeOpacity={0.85}
           >
-            <Image source={{ uri: product.imageUrl }} style={styles.shoppingImage} contentFit="cover" />
+            <Image
+              source={{ uri: product.imageUrl }}
+              style={styles.shoppingImage}
+              contentFit="cover"
+            />
             <View style={styles.shoppingInfo}>
-              <Text style={styles.shoppingTitle} numberOfLines={2}>{product.title}</Text>
+              <Text style={styles.shoppingTitle} numberOfLines={2}>
+                {product.title}
+              </Text>
               <Text style={styles.shoppingPrice}>{product.price}</Text>
-              <Text style={styles.shoppingStore} numberOfLines={1}>{product.store}</Text>
+              <Text style={styles.shoppingStore} numberOfLines={1}>
+                {product.store}
+              </Text>
               <Text style={styles.shoppingCta}>VOIR →</Text>
             </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
+    </View>
+  );
+}
+
+// Stepper component for the form
+function FormStepper({ currentStep }: { currentStep: number }) {
+  return (
+    <View style={styles.stepper}>
+      {FORM_STEPS.map((label, i) => {
+        const stepNum = i + 1;
+        const isDone = stepNum < currentStep;
+        const isActive = stepNum === currentStep;
+        return (
+          <View key={label} style={styles.stepperItem}>
+            <View
+              style={[
+                styles.stepperCircle,
+                isActive && styles.stepperCircleActive,
+                isDone && styles.stepperCircleDone,
+              ]}
+            >
+              {isDone ? (
+                <Ionicons name="checkmark" size={12} color="#00C4BF" />
+              ) : (
+                <Text style={[styles.stepperNum, isActive && styles.stepperNumActive]}>
+                  {stepNum}
+                </Text>
+              )}
+            </View>
+            {i < FORM_STEPS.length - 1 && (
+              <View style={[styles.stepperLine, isDone && styles.stepperLineDone]} />
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -130,7 +205,9 @@ export default function StylistScreen() {
   const carouselRef = useRef<FlatList<Outfit>>(null);
 
   const [step, setStep] = useState<Step>('form');
+  const [formStep, setFormStep] = useState(1);
   const [occasion, setOccasion] = useState<Occasion | null>(null);
+  const [occasionNote, setOccasionNote] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [tier, setTier] = useState<GenerationTier>('standard');
   const [composeMode, setComposeMode] = useState<ComposeMode>('dressing');
@@ -139,11 +216,10 @@ export default function StylistScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOutfit, setSelectedOutfit] = useState<Outfit | null>(null);
 
-  // Karl's memory of the user — loaded on mount
   const [karlProfile, setKarlProfile] = useState<StyleProfile | null>(null);
 
   useEffect(() => {
-    getStyleProfile().then(setKarlProfile);
+    void getStyleProfile().then(setKarlProfile);
   }, []);
 
   function toggleStyle(tag: string) {
@@ -160,14 +236,19 @@ export default function StylistScreen() {
     setStep('waiting');
 
     try {
-      const tierNote = tier === 'premium' ? 'Génération premium — curation approfondie.' : tier === 'luxe' ? 'Génération luxe — expérience stylist haut de gamme, aucun compromis.' : undefined;
+      const tierNote =
+        tier === 'premium'
+          ? 'Génération premium — curation approfondie.'
+          : tier === 'luxe'
+            ? 'Génération luxe — expérience stylist haut de gamme, aucun compromis.'
+            : undefined;
       const { id: briefId } = await createBrief({
         occasion,
         styleTags: selectedStyles.length > 0 ? selectedStyles : undefined,
         budget: budget ?? undefined,
         composeMode,
         weatherNote: weather?.note,
-        styleNotes: tierNote,
+        styleNotes: occasionNote || tierNote,
       });
 
       let attempts = 0;
@@ -182,7 +263,10 @@ export default function StylistScreen() {
             setStep('results');
           } else if (brief.status === 'failed' || attempts > 60) {
             clearInterval(poll);
-            Alert.alert('Erreur', brief.errorMessage ?? 'Génération échouée. Réessaie.');
+            const msg = brief.errorMessage?.startsWith('[')
+              ? 'Génération échouée. Réessaie.'
+              : (brief.errorMessage ?? 'Génération échouée. Réessaie.');
+            Alert.alert('Erreur', msg);
             setStep('form');
           }
         } catch {
@@ -216,7 +300,9 @@ export default function StylistScreen() {
 
   function resetForm() {
     setStep('form');
+    setFormStep(1);
     setOccasion(null);
+    setOccasionNote('');
     setSelectedStyles([]);
     setTier('standard');
     setComposeMode('dressing');
@@ -231,7 +317,8 @@ export default function StylistScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <StatusBar barStyle="dark-content" />
         <TouchableOpacity onPress={() => setSelectedOutfit(null)} style={styles.backRow}>
-          <Text style={styles.backText}>← RETOUR AUX TENUES</Text>
+          <Ionicons name="arrow-back" size={18} color="#00C4BF" />
+          <Text style={styles.backText}>Retour aux tenues</Text>
         </TouchableOpacity>
 
         <Text style={styles.eyebrow}>DÉTAIL DE LA TENUE</Text>
@@ -246,16 +333,22 @@ export default function StylistScreen() {
           {selectedOutfit.items.map((item) => (
             <View key={item.id} style={styles.outfitItemCard}>
               {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} style={styles.outfitItemImage} contentFit="cover" />
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.outfitItemImage}
+                  contentFit="cover"
+                />
               ) : (
                 <View style={styles.outfitItemPlaceholder}>
-                  <Text style={styles.placeholderIcon}>◈</Text>
+                  <Ionicons name="shirt-outline" size={24} color="#A0AEC0" />
                 </View>
               )}
               <Text style={styles.outfitItemCategory} numberOfLines={1}>
                 {(CATEGORY_FR[item.category ?? ''] ?? item.category ?? '').toUpperCase()}
               </Text>
-              <Text style={styles.outfitItemColor} numberOfLines={1}>{item.primaryColor}</Text>
+              <Text style={styles.outfitItemColor} numberOfLines={1}>
+                {item.primaryColor}
+              </Text>
             </View>
           ))}
         </View>
@@ -265,13 +358,29 @@ export default function StylistScreen() {
         )}
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.btnWorn} onPress={() => handleAction(selectedOutfit, 'worn')}>
-            <Text style={styles.btnPrimaryText}>JE LA PORTE</Text>
+          <TouchableOpacity
+            style={styles.btnWornWrap}
+            onPress={() => handleAction(selectedOutfit, 'worn')}
+          >
+            <LinearGradient
+              colors={['#1e40af', '#2563eb', '#00c4bf']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.btnWorn}
+            >
+              <Text style={styles.btnPrimaryText}>JE LA PORTE</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btnSave} onPress={() => handleAction(selectedOutfit, 'save')}>
+          <TouchableOpacity
+            style={styles.btnSave}
+            onPress={() => handleAction(selectedOutfit, 'save')}
+          >
             <Text style={styles.btnSecondaryText}>ENREGISTRER</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.btnDiscard} onPress={() => handleAction(selectedOutfit, 'discard')}>
+          <TouchableOpacity
+            style={styles.btnDiscard}
+            onPress={() => handleAction(selectedOutfit, 'discard')}
+          >
             <Text style={styles.btnDiscardText}>Rejeter</Text>
           </TouchableOpacity>
         </View>
@@ -284,7 +393,7 @@ export default function StylistScreen() {
     return (
       <View style={styles.waitingContainer}>
         <StatusBar barStyle="dark-content" />
-        <ActivityIndicator size="large" color={colors.primary[400]} />
+        <ActivityIndicator size="large" color="#00C4BF" />
         <Text style={styles.waitingTitle}>KARL COMPOSE</Text>
         <Text style={styles.waitingText}>
           {karlProfile && karlProfile.styleConfidence > 0.4
@@ -311,7 +420,8 @@ export default function StylistScreen() {
           <View style={styles.resultsHeaderRow}>
             <Text style={styles.resultsTitle}>TES TENUES</Text>
             <Text style={styles.resultsCounter}>
-              {currentIndex + 1}<Text style={styles.resultsCounterMax}>/{outfits.length}</Text>
+              {currentIndex + 1}
+              <Text style={styles.resultsCounterMax}>/{outfits.length}</Text>
             </Text>
           </View>
         </View>
@@ -329,7 +439,10 @@ export default function StylistScreen() {
           }}
           renderItem={({ item: outfit, index }) => (
             <View style={styles.carouselPage}>
-              <ScrollView contentContainerStyle={styles.carouselContent} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                contentContainerStyle={styles.carouselContent}
+                showsVerticalScrollIndicator={false}
+              >
                 <View style={styles.outfitCardHeader}>
                   <Text style={styles.outfitCardTitle}>TENUE {index + 1}</Text>
                   <View style={styles.scoreChip}>
@@ -344,16 +457,22 @@ export default function StylistScreen() {
                   {outfit.items.map((item) => (
                     <View key={item.id} style={styles.outfitItemCard}>
                       {item.imageUrl ? (
-                        <Image source={{ uri: item.imageUrl }} style={styles.outfitItemImage} contentFit="cover" />
+                        <Image
+                          source={{ uri: item.imageUrl }}
+                          style={styles.outfitItemImage}
+                          contentFit="cover"
+                        />
                       ) : (
                         <View style={styles.outfitItemPlaceholder}>
-                          <Text style={styles.placeholderIcon}>◈</Text>
+                          <Ionicons name="shirt-outline" size={24} color="#A0AEC0" />
                         </View>
                       )}
                       <Text style={styles.outfitItemCategory} numberOfLines={1}>
                         {(CATEGORY_FR[item.category ?? ''] ?? item.category ?? '').toUpperCase()}
                       </Text>
-                      <Text style={styles.outfitItemColor} numberOfLines={1}>{item.primaryColor}</Text>
+                      <Text style={styles.outfitItemColor} numberOfLines={1}>
+                        {item.primaryColor}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -363,13 +482,29 @@ export default function StylistScreen() {
                 )}
 
                 <View style={styles.actions}>
-                  <TouchableOpacity style={styles.btnWorn} onPress={() => handleAction(outfit, 'worn')}>
-                    <Text style={styles.btnPrimaryText}>JE LA PORTE</Text>
+                  <TouchableOpacity
+                    style={styles.btnWornWrap}
+                    onPress={() => handleAction(outfit, 'worn')}
+                  >
+                    <LinearGradient
+                      colors={['#1e40af', '#2563eb', '#00c4bf']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.btnWorn}
+                    >
+                      <Text style={styles.btnPrimaryText}>JE LA PORTE</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnSave} onPress={() => handleAction(outfit, 'save')}>
+                  <TouchableOpacity
+                    style={styles.btnSave}
+                    onPress={() => handleAction(outfit, 'save')}
+                  >
                     <Text style={styles.btnSecondaryText}>ENREGISTRER</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnDiscard} onPress={() => handleAction(outfit, 'discard')}>
+                  <TouchableOpacity
+                    style={styles.btnDiscard}
+                    onPress={() => handleAction(outfit, 'discard')}
+                  >
                     <Text style={styles.btnDiscardText}>Rejeter</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setSelectedOutfit(outfit)}>
@@ -399,12 +534,25 @@ export default function StylistScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.formHeader}>
-        <Text style={styles.eyebrow}>TON STYLISTE PERSONNEL</Text>
-        <Text style={styles.formTitle}>KARL</Text>
-        <View style={styles.formDivider} />
-        <Text style={styles.formSub}>Plus tu enrichis ton dressing et partages tes looks, plus Karl te connaît.</Text>
-      </View>
+      {/* Form header with gradient bg */}
+      <LinearGradient
+        colors={['#dbeafe', '#f8faff', '#ffffff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.formHeaderGradient}
+      >
+        <View style={styles.formHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
+            <Ionicons name="arrow-back" size={20} color="#0D1B2A" />
+          </TouchableOpacity>
+          <Text style={styles.formHeaderTitle}>Générer une tenue</Text>
+        </View>
+      </LinearGradient>
+
+      <FormStepper currentStep={formStep} />
+
+      <Text style={styles.formTitle}>Quelle est l'occasion ?</Text>
+      <Text style={styles.formSub}>Choisis ou décris ton occasion</Text>
 
       {/* Karl's memory card */}
       {karlProfile && (
@@ -415,16 +563,21 @@ export default function StylistScreen() {
               <Text style={styles.karlCardTitle}>{karlProfile.styleConfidenceLabel}</Text>
             </View>
             <View style={styles.karlScoreBadge}>
-              <Text style={styles.karlScoreText}>{Math.round(karlProfile.styleConfidence * 100)}%</Text>
+              <Text style={styles.karlScoreText}>
+                {Math.round(karlProfile.styleConfidence * 100)}%
+              </Text>
             </View>
           </View>
 
-          {/* Confidence bar */}
           <View style={styles.karlBar}>
-            <View style={[styles.karlBarFill, { width: `${Math.round(karlProfile.styleConfidence * 100)}%` as any }]} />
+            <View
+              style={[
+                styles.karlBarFill,
+                { width: `${Math.round(karlProfile.styleConfidence * 100)}%` },
+              ]}
+            />
           </View>
 
-          {/* What Karl knows */}
           <View style={styles.karlKnowledge}>
             {karlProfile.dominantColors.length > 0 && (
               <View style={styles.karlKnowledgeRow}>
@@ -452,7 +605,6 @@ export default function StylistScreen() {
             )}
           </View>
 
-          {/* Signals */}
           <View style={styles.karlSignals}>
             <View style={styles.karlSignal}>
               <Text style={styles.karlSignalValue}>{karlProfile.dressingSize}</Text>
@@ -472,35 +624,54 @@ export default function StylistScreen() {
 
           {karlProfile.styleConfidence < 0.4 && (
             <Text style={styles.karlTip}>
-              ✦ Ajoutez plus de pièces et postez vos tenues pour que Karl affine sa connaissance de votre style.
+              Ajoutez plus de pièces et postez vos tenues pour que Karl affine sa connaissance de
+              votre style.
             </Text>
           )}
         </View>
       )}
 
-      {/* Occasion */}
+      {/* Occasion icons grid */}
       <Text style={styles.sectionLabel}>OCCASION *</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.occasionScroll}
-        contentContainerStyle={styles.occasionScrollContent}
-      >
-        {OCCASIONS.map((occ) => (
-          <TouchableOpacity
-            key={occ.value}
-            style={[styles.occasionChip, occasion === occ.value && styles.occasionChipActive]}
-            onPress={() => setOccasion(occ.value)}
-          >
-            <Text style={[styles.occasionLabel, occasion === occ.value && styles.occasionLabelActive]}>
-              {occ.label.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.occasionGrid}>
+        {OCCASIONS.map((occ) => {
+          const isActive = occasion === occ.value;
+          return (
+            <TouchableOpacity
+              key={occ.value}
+              style={[styles.occasionIconCard, isActive && styles.occasionIconCardActive]}
+              onPress={() => setOccasion(occ.value)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.occasionIconEmoji}>{occ.icon}</Text>
+              <Text
+                style={[styles.occasionIconLabel, isActive && styles.occasionIconLabelActive]}
+                numberOfLines={1}
+              >
+                {occ.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Occasion description */}
+      <TextInput
+        style={styles.occasionTextarea}
+        placeholder="Décris ton occasion..."
+        placeholderTextColor="#A0AEC0"
+        value={occasionNote}
+        onChangeText={setOccasionNote}
+        multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+        keyboardAppearance="light"
+      />
 
       {/* Style chips */}
-      <Text style={styles.sectionLabel}>STYLE <Text style={styles.optional}>(optionnel)</Text></Text>
+      <Text style={styles.sectionLabel}>
+        STYLE <Text style={styles.optional}>(optionnel)</Text>
+      </Text>
       <View style={styles.chipGrid}>
         {STYLE_CHIPS.map((tag) => (
           <TouchableOpacity
@@ -508,8 +679,13 @@ export default function StylistScreen() {
             style={[styles.styleChip, selectedStyles.includes(tag) && styles.styleChipActive]}
             onPress={() => toggleStyle(tag)}
           >
-            <Text style={[styles.styleChipText, selectedStyles.includes(tag) && styles.styleChipTextActive]}>
-              {tag.toUpperCase()}
+            <Text
+              style={[
+                styles.styleChipText,
+                selectedStyles.includes(tag) && styles.styleChipTextActive,
+              ]}
+            >
+              {tag}
             </Text>
           </TouchableOpacity>
         ))}
@@ -524,28 +700,50 @@ export default function StylistScreen() {
           return (
             <TouchableOpacity
               key={t.value}
-              style={[styles.tierCard, active && styles.tierCardActive, isLuxe && active && styles.tierCardLuxeActive]}
+              style={[
+                styles.tierCard,
+                active && styles.tierCardActive,
+                isLuxe && active && styles.tierCardLuxeActive,
+              ]}
               onPress={() => setTier(t.value)}
               activeOpacity={0.85}
             >
               <View style={styles.tierLeft}>
-                <Text style={[styles.tierRoman, active && styles.tierRomanActive, isLuxe && active && styles.tierRomanLuxe]}>
+                <Text
+                  style={[
+                    styles.tierRoman,
+                    active && styles.tierRomanActive,
+                    isLuxe && active && styles.tierRomanLuxe,
+                  ]}
+                >
                   {t.roman}
                 </Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.tierLabel, active && styles.tierLabelActive]}>{t.label}</Text>
+                  <Text style={[styles.tierLabel, active && styles.tierLabelActive]}>
+                    {t.label}
+                  </Text>
                   <Text style={styles.tierTagline}>{t.tagline}</Text>
                   {active && (
                     <View style={styles.tierFeatures}>
                       {t.features.map((f, i) => (
-                        <Text key={i} style={[styles.tierFeature, isLuxe && { color: colors.primary[400] }]}>— {f}</Text>
+                        <Text key={i} style={[styles.tierFeature, isLuxe && { color: '#00C4BF' }]}>
+                          — {f}
+                        </Text>
                       ))}
                     </View>
                   )}
                 </View>
               </View>
-              <View style={[styles.tierCheck, active && styles.tierCheckActive, isLuxe && active && styles.tierCheckLuxe]}>
-                {active && <Text style={[styles.tierCheckMark, isLuxe && { color: colors.neutral[950] }]}>✓</Text>}
+              <View
+                style={[
+                  styles.tierCheck,
+                  active && styles.tierCheckActive,
+                  isLuxe && active && styles.tierCheckLuxe,
+                ]}
+              >
+                {active && (
+                  <Text style={[styles.tierCheckMark, isLuxe && { color: '#FFFFFF' }]}>✓</Text>
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -558,13 +756,26 @@ export default function StylistScreen() {
         {COMPOSE_MODES.map((mode) => (
           <TouchableOpacity
             key={mode.value}
-            style={[styles.composeModeBtn, composeMode === mode.value && styles.composeModeBtnActive]}
+            style={[
+              styles.composeModeBtn,
+              composeMode === mode.value && styles.composeModeBtnActive,
+            ]}
             onPress={() => setComposeMode(mode.value)}
           >
-            <Text style={[styles.composeModeLbl, composeMode === mode.value && styles.composeModeLblActive]}>
+            <Text
+              style={[
+                styles.composeModeLbl,
+                composeMode === mode.value && styles.composeModeLblActive,
+              ]}
+            >
               {mode.label}
             </Text>
-            <Text style={[styles.composeModeSubLbl, composeMode === mode.value && styles.composeModeSubLblActive]}>
+            <Text
+              style={[
+                styles.composeModeSubLbl,
+                composeMode === mode.value && styles.composeModeSubLblActive,
+              ]}
+            >
               {mode.sub}
             </Text>
           </TouchableOpacity>
@@ -572,7 +783,9 @@ export default function StylistScreen() {
       </View>
 
       {/* Budget */}
-      <Text style={[styles.sectionLabel, { marginTop: spacing[4] }]}>BUDGET <Text style={styles.optional}>(optionnel)</Text></Text>
+      <Text style={[styles.sectionLabel, { marginTop: spacing[4] }]}>
+        BUDGET <Text style={styles.optional}>(optionnel)</Text>
+      </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -585,7 +798,9 @@ export default function StylistScreen() {
             style={[styles.budgetChip, budget === opt.value && styles.budgetChipActive]}
             onPress={() => setBudget(opt.value)}
           >
-            <Text style={[styles.budgetChipText, budget === opt.value && styles.budgetChipTextActive]}>
+            <Text
+              style={[styles.budgetChipText, budget === opt.value && styles.budgetChipTextActive]}
+            >
               {opt.label.toUpperCase()}
             </Text>
           </TouchableOpacity>
@@ -605,101 +820,200 @@ export default function StylistScreen() {
       </View>
 
       <TouchableOpacity
-        style={[styles.submitBtn, !occasion && styles.submitBtnDisabled]}
+        style={styles.submitBtnWrap}
         onPress={handleSubmit}
         disabled={!occasion}
         activeOpacity={0.85}
       >
-        <Text style={[styles.submitBtnText, !occasion && styles.submitBtnTextDisabled]}>
-          DEMANDER À KARL
-        </Text>
+        {occasion ? (
+          <LinearGradient
+            colors={['#1e40af', '#2563eb', '#00c4bf']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.submitBtn}
+          >
+            <Text style={styles.submitBtnText}>Suivant</Text>
+          </LinearGradient>
+        ) : (
+          <View style={[styles.submitBtn, styles.submitBtnDisabled]}>
+            <Text style={[styles.submitBtnText, styles.submitBtnTextDisabled]}>Suivant</Text>
+          </View>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral[950] },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: {
-    padding: spacing[6],
+    padding: spacing[5],
     paddingTop: spacing[16],
     paddingBottom: spacing[10],
   },
 
-  // Back
-  backRow: { marginBottom: spacing[5] },
+  // Back / header
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
   backText: {
-    color: colors.primary[400],
-    fontSize: typography.fontSize.xs,
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#00C4BF',
+    fontSize: 13,
   },
 
   // Form header
-  formHeader: { gap: spacing[2], marginBottom: spacing[6] },
-  eyebrow: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[500],
-    letterSpacing: 4,
-    fontWeight: typography.fontWeight.black,
+  formHeaderGradient: {
+    marginHorizontal: -spacing[5],
+    paddingHorizontal: spacing[5],
+    paddingTop: spacing[16],
+    paddingBottom: spacing[4],
+    marginBottom: spacing[2],
   },
+  formHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  formHeaderTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 18,
+    color: '#0D1B2A',
+  },
+
+  // Stepper
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[6],
+  },
+  stepperItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepperCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  stepperCircleActive: {
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
+  },
+  stepperCircleDone: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#00C4BF',
+  },
+  stepperNum: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 12,
+    color: '#A0AEC0',
+  },
+  stepperNumActive: {
+    color: '#FFFFFF',
+  },
+  stepperLine: {
+    flex: 1,
+    height: 1.5,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 2,
+  },
+  stepperLineDone: {
+    backgroundColor: '#00C4BF',
+  },
+
+  // Form titles
   formTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    lineHeight: 40,
-  },
-  formDivider: {
-    width: 48,
-    height: 2,
-    backgroundColor: '#E8194A',
-    marginVertical: spacing[2],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 24,
+    color: '#0D1B2A',
+    marginBottom: spacing[1],
   },
   formSub: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
-    lineHeight: 22,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 13,
+    color: '#A0AEC0',
+    lineHeight: 20,
+    marginBottom: spacing[4],
+  },
+  eyebrow: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 10,
+    color: '#00C4BF',
+    letterSpacing: 3,
   },
 
   // Section labels
   sectionLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 10,
+    color: '#A0AEC0',
+    letterSpacing: 2,
     marginTop: spacing[5],
     marginBottom: spacing[3],
   },
   optional: {
-    color: colors.neutral[700],
+    fontFamily: 'Poppins_400Regular',
+    color: '#A0AEC0',
     letterSpacing: 0,
-    fontWeight: typography.fontWeight.regular,
-    textTransform: 'none',
+    fontSize: 10,
   },
 
-  // Occasion
-  occasionScroll: { marginBottom: spacing[2] },
-  occasionScrollContent: { gap: spacing[2], paddingRight: spacing[6] },
-  occasionChip: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
-    borderRadius: 9999,
+  // Occasion icons grid
+  occasionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+    marginBottom: spacing[3],
   },
-  occasionChipActive: {
-    backgroundColor: colors.primary[600],
-    borderColor: colors.primary[600],
+  occasionIconCard: {
+    width: (SCREEN_WIDTH - spacing[5] * 2 - spacing[2] * 4) / 5,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dbeafe',
+    borderRadius: 12,
+    gap: 4,
+    padding: spacing[1],
   },
-  occasionLabel: {
+  occasionIconCardActive: {
+    backgroundColor: '#00C4BF',
+  },
+  occasionIconEmoji: {
+    fontSize: 20,
+  },
+  occasionIconLabel: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: 9,
-    color: colors.neutral[500],
-    letterSpacing: 1.5,
-    fontWeight: typography.fontWeight.medium,
+    color: '#00C4BF',
+    textAlign: 'center',
   },
-  occasionLabelActive: { color: colors.neutral[950] },
+  occasionIconLabelActive: {
+    color: '#FFFFFF',
+  },
+
+  // Occasion textarea
+  occasionTextarea: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 14,
+    color: '#0D1B2A',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    padding: spacing[4],
+    minHeight: 80,
+    marginBottom: spacing[2],
+  },
 
   // Style chips
   chipGrid: {
@@ -709,24 +1023,23 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
   styleChip: {
-    paddingHorizontal: spacing[3],
+    paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 9999,
   },
   styleChipActive: {
-    backgroundColor: colors.neutral[0],
-    borderColor: colors.neutral[0],
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
   },
   styleChipText: {
-    fontSize: 9,
-    color: colors.neutral[500],
-    letterSpacing: 1.5,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 12,
+    color: '#A0AEC0',
   },
-  styleChipTextActive: { color: colors.neutral[950] },
+  styleChipTextActive: { color: '#FFFFFF' },
 
   // Tier selector
   tiersCol: {
@@ -738,19 +1051,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
+    borderColor: '#E2E8F0',
+    backgroundColor: '#f8faff',
     padding: spacing[4],
     gap: spacing[3],
     borderRadius: 14,
   },
   tierCardActive: {
-    borderColor: colors.primary[400],
-    backgroundColor: 'rgba(36,72,216,0.06)',
+    borderColor: '#00C4BF',
+    backgroundColor: 'rgba(0,196,191,0.06)',
   },
   tierCardLuxeActive: {
-    borderColor: colors.primary[400],
-    backgroundColor: 'rgba(36,72,216,0.12)',
+    borderColor: '#00C4BF',
+    backgroundColor: 'rgba(0,196,191,0.12)',
   },
   tierLeft: {
     flexDirection: 'row',
@@ -759,61 +1072,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tierRoman: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.black,
-    color: colors.neutral[800],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#E2E8F0',
     lineHeight: 28,
     width: 24,
   },
-  tierRomanActive: { color: colors.primary[400] },
-  tierRomanLuxe: { color: colors.primary[300] },
+  tierRomanActive: { color: '#00C4BF' },
+  tierRomanLuxe: { color: '#00C4BF' },
   tierLabel: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    color: colors.neutral[500],
-    letterSpacing: 2,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 12,
+    color: '#A0AEC0',
+    letterSpacing: 1,
     marginBottom: 3,
   },
-  tierLabelActive: { color: colors.neutral[0] },
+  tierLabelActive: { color: '#0D1B2A' },
   tierTagline: {
-    fontSize: 10,
-    color: colors.neutral[600],
-    letterSpacing: 0.3,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#A0AEC0',
   },
   tierRight: {
     alignItems: 'flex-end',
     gap: spacing[2],
   },
   tierFeatures: {
-    alignItems: 'flex-end',
     gap: 3,
-    marginBottom: spacing[1],
+    marginTop: spacing[1],
   },
   tierFeature: {
-    fontSize: 9,
-    color: colors.neutral[400],
-    letterSpacing: 0.5,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 10,
+    color: '#A0AEC0',
   },
   tierCheck: {
-    width: 18,
-    height: 18,
-    borderWidth: 1,
-    borderColor: colors.neutral[700],
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   tierCheckActive: {
-    borderColor: colors.primary[400],
+    borderColor: '#00C4BF',
     backgroundColor: 'transparent',
   },
   tierCheckLuxe: {
-    backgroundColor: colors.primary[400],
-    borderColor: colors.primary[400],
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
   },
   tierCheckMark: {
+    fontFamily: 'Poppins_700Bold',
     fontSize: 10,
-    color: colors.primary[400],
-    fontWeight: typography.fontWeight.bold,
+    color: '#00C4BF',
   },
 
   // Compose mode
@@ -827,51 +1140,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing[4],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
+    borderColor: '#E2E8F0',
+    backgroundColor: '#f8faff',
     gap: 4,
+    borderRadius: 12,
   },
   composeModeBtnActive: {
-    borderColor: colors.primary[400],
-    backgroundColor: 'rgba(36,72,216,0.08)',
+    borderColor: '#00C4BF',
+    backgroundColor: 'rgba(0,196,191,0.08)',
   },
   composeModeLbl: {
-    fontSize: 9,
-    color: colors.neutral[500],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 10,
+    color: '#A0AEC0',
+    letterSpacing: 1,
   },
-  composeModeLblActive: { color: colors.primary[400] },
+  composeModeLblActive: { color: '#00C4BF' },
   composeModeSubLbl: {
-    fontSize: 8,
-    color: colors.neutral[700],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 9,
+    color: '#A0AEC0',
     textAlign: 'center',
-    letterSpacing: 0.3,
   },
-  composeModeSubLblActive: { color: colors.primary[700] },
+  composeModeSubLblActive: { color: '#00C4BF' },
 
   // Budget
   budgetScroll: { marginBottom: spacing[2] },
-  budgetScrollContent: { gap: spacing[2], paddingRight: spacing[6] },
+  budgetScrollContent: { gap: spacing[2], paddingRight: spacing[5] },
   budgetChip: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 9999,
   },
   budgetChipActive: {
-    backgroundColor: colors.primary[600],
-    borderColor: colors.primary[600],
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
   },
   budgetChipText: {
-    fontSize: 9,
-    color: colors.neutral[500],
-    letterSpacing: 1.5,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 12,
+    color: '#A0AEC0',
   },
-  budgetChipTextActive: { color: colors.neutral[950] },
+  budgetChipTextActive: { color: '#FFFFFF' },
 
   // Weather
   weatherRow: {
@@ -879,82 +1192,91 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
     borderWidth: 1,
-    borderColor: colors.neutral[900],
+    borderColor: '#dbeafe',
+    backgroundColor: '#f8faff',
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[3],
     marginTop: spacing[4],
     marginBottom: spacing[5],
+    borderRadius: 10,
   },
-  weatherIcon: { fontSize: 12, color: colors.primary[500] },
+  weatherIcon: { fontSize: 14, color: '#00C4BF' },
   weatherText: {
+    fontFamily: 'Poppins_400Regular',
     flex: 1,
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[600],
-    letterSpacing: 0.3,
+    fontSize: 12,
+    color: '#A0AEC0',
   },
 
   // Submit
-  submitBtn: {
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[5],
-    alignItems: 'center',
-    borderRadius: 9999,
-    shadowColor: '#2448D8',
+  submitBtnWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 7,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  submitBtnDisabled: { backgroundColor: colors.neutral[900] },
+  submitBtn: {
+    paddingVertical: spacing[4],
+    alignItems: 'center',
+    borderRadius: 14,
+  },
+  submitBtnDisabled: { backgroundColor: '#E2E8F0', shadowOpacity: 0 },
   submitBtnText: {
-    color: colors.neutral[950],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+    fontSize: 15,
+    letterSpacing: 1,
   },
-  submitBtnTextDisabled: { color: colors.neutral[700] },
+  submitBtnTextDisabled: { color: '#A0AEC0' },
 
   // Waiting
   waitingContainer: {
     flex: 1,
-    backgroundColor: colors.neutral[950],
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[4],
   },
   waitingTitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.black,
-    color: colors.neutral[0],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 14,
+    color: '#0D1B2A',
     letterSpacing: 4,
     marginTop: spacing[2],
   },
   waitingText: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 15,
+    color: '#A0AEC0',
     textAlign: 'center',
+    paddingHorizontal: spacing[8],
   },
   waitingSubText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[700],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    color: '#A0AEC0',
     letterSpacing: 1,
   },
   waitingKarlNote: {
-    fontSize: 10,
-    color: colors.primary[700],
-    letterSpacing: 1.5,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 11,
+    color: '#00C4BF',
+    letterSpacing: 1,
     marginTop: spacing[3],
-    fontWeight: typography.fontWeight.bold,
   },
 
-  // ── Karl card ──────────────────────────────────────────────────────────────
+  // Karl card
   karlCard: {
-    backgroundColor: colors.neutral[900],
+    backgroundColor: '#f8faff',
     borderWidth: 1,
-    borderColor: colors.primary[900],
+    borderColor: '#dbeafe',
     padding: spacing[4],
     gap: spacing[3],
     marginBottom: spacing[2],
+    borderRadius: 16,
   },
   karlCardTop: {
     flexDirection: 'row',
@@ -962,39 +1284,42 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   karlCardLabel: {
+    fontFamily: 'Poppins_700Bold',
     fontSize: 9,
-    color: colors.primary[600],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
+    color: '#00C4BF',
+    letterSpacing: 2,
     marginBottom: 4,
   },
   karlCardTitle: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[100],
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: '#0D1B2A',
     maxWidth: 220,
   },
   karlScoreBadge: {
     borderWidth: 1,
-    borderColor: colors.primary[700],
+    borderColor: '#00C4BF',
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
-    backgroundColor: 'rgba(36,72,216,0.08)',
+    backgroundColor: '#dbeafe',
+    borderRadius: 8,
   },
   karlScoreText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.black,
-    color: colors.primary[400],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 14,
+    color: '#00C4BF',
     letterSpacing: 1,
   },
   karlBar: {
-    height: 2,
-    backgroundColor: colors.neutral[800],
+    height: 3,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
     overflow: 'hidden',
   },
   karlBarFill: {
-    height: 2,
-    backgroundColor: colors.primary[500],
+    height: 3,
+    backgroundColor: '#00C4BF',
+    borderRadius: 2,
   },
   karlKnowledge: {
     gap: spacing[2],
@@ -1004,23 +1329,23 @@ const styles = StyleSheet.create({
     gap: spacing[3],
   },
   karlKnowledgeKey: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 1.5,
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 10,
+    color: '#A0AEC0',
     width: 52,
     textTransform: 'uppercase',
     paddingTop: 1,
   },
   karlKnowledgeVal: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[300],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    color: '#0D1B2A',
     flex: 1,
   },
   karlSignals: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: colors.neutral[800],
+    borderTopColor: '#E2E8F0',
     paddingTop: spacing[3],
     gap: spacing[2],
     alignItems: 'center',
@@ -1028,35 +1353,36 @@ const styles = StyleSheet.create({
   },
   karlSignal: { alignItems: 'center', gap: 2 },
   karlSignalValue: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.black,
-    color: colors.primary[400],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 17,
+    color: '#00C4BF',
     lineHeight: 22,
   },
   karlSignalLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 0.5,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 10,
+    color: '#A0AEC0',
   },
   karlSignalDivider: {
     width: 1,
     height: 28,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: '#E2E8F0',
   },
   karlTip: {
-    fontSize: 10,
-    color: colors.neutral[600],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#A0AEC0',
     lineHeight: 16,
     fontStyle: 'italic',
   },
 
   // Results
   resultsHeader: {
-    paddingHorizontal: spacing[6],
+    paddingHorizontal: spacing[5],
     paddingTop: spacing[16],
     paddingBottom: spacing[3],
     borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[900],
+    borderBottomColor: '#E2E8F0',
     gap: spacing[1],
   },
   resultsHeaderRow: {
@@ -1065,26 +1391,26 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   resultsTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 22,
+    color: '#0D1B2A',
   },
   resultsCounter: {
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.black,
-    color: colors.primary[400],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 22,
+    color: '#00C4BF',
   },
   resultsCounterMax: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[700],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 15,
+    color: '#A0AEC0',
   },
   carouselPage: {
     width: SCREEN_WIDTH,
     flex: 1,
   },
   carouselContent: {
-    paddingHorizontal: spacing[6],
+    paddingHorizontal: spacing[5],
     paddingTop: spacing[4],
     paddingBottom: spacing[6],
   },
@@ -1095,27 +1421,29 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   outfitCardTitle: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    color: colors.neutral[500],
-    letterSpacing: 3,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 12,
+    color: '#A0AEC0',
+    letterSpacing: 2,
   },
   scoreChip: {
     paddingHorizontal: spacing[3],
     paddingVertical: 4,
-    backgroundColor: 'rgba(36,72,216,0.10)',
+    backgroundColor: '#dbeafe',
     borderWidth: 1,
-    borderColor: colors.primary[800],
+    borderColor: '#00C4BF',
+    borderRadius: 8,
   },
   scoreValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[400],
-    fontWeight: typography.fontWeight.black,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 13,
+    color: '#00C4BF',
     letterSpacing: 1,
   },
   outfitJustif: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 13,
+    color: '#A0AEC0',
     lineHeight: 22,
     marginBottom: spacing[4],
     fontStyle: 'italic',
@@ -1123,15 +1451,15 @@ const styles = StyleSheet.create({
 
   // Detail
   detailTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 20,
+    color: '#0D1B2A',
     marginBottom: spacing[2],
   },
   justification: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 14,
+    color: '#A0AEC0',
     lineHeight: 24,
     marginBottom: spacing[5],
     fontStyle: 'italic',
@@ -1148,31 +1476,28 @@ const styles = StyleSheet.create({
   outfitItemImage: {
     width: 80,
     height: 100,
-    backgroundColor: colors.neutral[900],
+    backgroundColor: '#f8faff',
+    borderRadius: 8,
   },
   outfitItemPlaceholder: {
     width: 80,
     height: 100,
-    backgroundColor: colors.neutral[900],
-    borderWidth: 1,
-    borderColor: colors.neutral[800],
+    backgroundColor: '#dbeafe',
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  placeholderIcon: {
-    fontSize: 24,
-    color: colors.neutral[700],
-  },
   outfitItemCategory: {
+    fontFamily: 'Poppins_700Bold',
     fontSize: 8,
-    color: colors.neutral[600],
-    letterSpacing: 1.5,
-    fontWeight: typography.fontWeight.black,
+    color: '#A0AEC0',
+    letterSpacing: 1,
     textAlign: 'center',
   },
   outfitItemColor: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: 8,
-    color: colors.neutral[700],
+    color: '#A0AEC0',
     textAlign: 'center',
     textTransform: 'capitalize',
   },
@@ -1180,86 +1505,96 @@ const styles = StyleSheet.create({
   // Shopping
   shoppingSection: { marginBottom: spacing[5] },
   shoppingSectionLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 10,
+    color: '#A0AEC0',
+    letterSpacing: 2,
     marginBottom: spacing[3],
   },
   shoppingScroll: { gap: spacing[3], paddingRight: spacing[2] },
   shoppingCard: {
     width: 150,
-    backgroundColor: colors.neutral[900],
+    backgroundColor: '#f8faff',
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
+    borderRadius: 12,
   },
   shoppingImage: { width: 150, height: 150 },
   shoppingInfo: { padding: spacing[3], gap: spacing[1] },
   shoppingTitle: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[300],
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    color: '#0D1B2A',
     lineHeight: 16,
   },
   shoppingPrice: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[400],
-    fontWeight: typography.fontWeight.bold,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+    color: '#00C4BF',
   },
   shoppingStore: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[600],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#A0AEC0',
   },
   shoppingCta: {
-    fontSize: 9,
-    color: colors.primary[500],
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 1.5,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 10,
+    color: '#00C4BF',
+    letterSpacing: 1,
     marginTop: 2,
   },
 
   // Actions
   actions: { gap: spacing[3] },
+  btnWornWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#1e40af',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   btnWorn: {
-    backgroundColor: colors.primary[500],
     paddingVertical: spacing[4],
     alignItems: 'center',
-    borderRadius: 9999,
+    borderRadius: 14,
   },
   btnSave: {
     paddingVertical: spacing[4],
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.neutral[700],
-    borderRadius: 9999,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
   },
   btnDiscard: {
     paddingVertical: spacing[3],
     alignItems: 'center',
   },
   btnPrimaryText: {
-    color: colors.neutral[950],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+    fontSize: 13,
+    letterSpacing: 2,
   },
   btnSecondaryText: {
-    color: colors.neutral[400],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#0D1B2A',
+    fontSize: 13,
+    letterSpacing: 1,
   },
   btnDiscardText: {
-    color: colors.neutral[700],
-    fontSize: typography.fontSize.xs,
-    letterSpacing: 1,
+    fontFamily: 'Poppins_400Regular',
+    color: '#A0AEC0',
+    fontSize: 13,
   },
   detailLink: {
+    fontFamily: 'Poppins_500Medium',
     textAlign: 'center',
-    color: colors.primary[500],
-    fontSize: typography.fontSize.xs,
-    letterSpacing: 1,
+    color: '#00C4BF',
+    fontSize: 13,
     paddingTop: spacing[1],
   },
 
@@ -1272,25 +1607,28 @@ const styles = StyleSheet.create({
   },
   dot: {
     width: 16,
-    height: 2,
-    backgroundColor: colors.neutral[800],
+    height: 3,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
   },
   dotActive: {
     width: 32,
-    backgroundColor: colors.primary[500],
+    backgroundColor: '#00C4BF',
+    borderRadius: 2,
   },
   newBriefBtn: {
-    marginHorizontal: spacing[6],
+    marginHorizontal: spacing[5],
     marginBottom: spacing[6],
     alignItems: 'center',
     paddingVertical: spacing[4],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
   },
   newBriefText: {
-    color: colors.neutral[500],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
+    fontFamily: 'Poppins_700Bold',
+    color: '#A0AEC0',
+    fontSize: 13,
+    letterSpacing: 2,
   },
 });

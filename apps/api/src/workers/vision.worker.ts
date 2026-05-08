@@ -1,15 +1,25 @@
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Worker } from 'bullmq';
+import sharp from 'sharp';
 
 import { env } from '../lib/env.js';
 import { prisma } from '../lib/prisma.js';
 import { VISION_QUEUE, type VisionJobData } from '../lib/queue.js';
 import { redis } from '../lib/redis.js';
 import { s3 } from '../lib/s3.js';
+import { awardEnergy } from '../routes/style-pass.js';
 import { pinecone } from '../services/pinecone.js';
 import { ClaudeVisionProvider } from '../services/vision/ClaudeVisionProvider.js';
 
 const visionProvider = new ClaudeVisionProvider();
+
+function detectMimeType(buf: Buffer): 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' {
+  if (buf[0] === 0xff && buf[1] === 0xd8) return 'image/jpeg';
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'image/png';
+  if (buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46) return 'image/webp';
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) return 'image/gif';
+  return 'image/jpeg';
+}
 
 async function fetchImageBuffer(imageKey: string): Promise<{ buffer: Buffer; mimeType: string }> {
   const command = new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: imageKey });
@@ -22,7 +32,7 @@ async function fetchImageBuffer(imageKey: string): Promise<{ buffer: Buffer; mim
   }
 
   const buffer = Buffer.concat(chunks);
-  const mimeType = response.ContentType ?? 'image/jpeg';
+  const mimeType = detectMimeType(buffer);
   return { buffer, mimeType };
 }
 
@@ -58,18 +68,45 @@ const worker = new Worker<VisionJobData>(
         },
       });
 
+      // Generate thumbnail
+      try {
+        const thumbBuffer = await sharp(buffer)
+          .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 75 })
+          .toBuffer();
+        const thumbKey = imageKey.replace(/(\.[^.]+)$/, '_thumb.jpg');
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: env.S3_BUCKET,
+            Key: thumbKey,
+            Body: thumbBuffer,
+            ContentType: 'image/jpeg',
+          }),
+        );
+        await prisma.dressingItem.update({
+          where: { id: dressingItemId },
+          data: { thumbnailKey: thumbKey },
+        });
+      } catch {
+        /* non-blocking */
+      }
+
+      await awardEnergy(userId, 'SCAN', dressingItemId);
+
       if (result.embedding.some((v) => v !== 0)) {
-        await pinecone.upsert([{
-          id: dressingItemId,
-          values: result.embedding,
-          metadata: {
-            userId,
-            category: result.category,
-            primaryColor: result.primaryColor,
-            styleTags: result.styleTags,
-            season: result.season,
+        await pinecone.upsert([
+          {
+            id: dressingItemId,
+            values: result.embedding,
+            metadata: {
+              userId,
+              category: result.category,
+              primaryColor: result.primaryColor,
+              styleTags: result.styleTags,
+              season: result.season,
+            },
           },
-        }]);
+        ]);
       }
 
       const durationMs = Date.now() - startedAt;

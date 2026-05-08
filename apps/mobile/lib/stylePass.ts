@@ -84,6 +84,16 @@ export function voteOnSubmission(
   return apiRequest(`/v1/style-pass/awards/${awardId}/vote/${submissionId}`, { method: 'POST' });
 }
 
+export function submitToAward(
+  awardId: string,
+  payload: { outfitId?: string; caption?: string },
+): Promise<AwardSubmission> {
+  return apiRequest(`/v1/style-pass/awards/${awardId}/submit`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getStyleCards(): Promise<StyleCard[]> {
   return apiRequest('/v1/style-pass/cards');
 }

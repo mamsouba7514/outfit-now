@@ -1,4 +1,6 @@
-import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { spacing } from '@outfit-now/design-tokens';
+import type { Gender } from '@outfit-now/shared-types';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -13,13 +15,21 @@ import {
   StatusBar,
 } from 'react-native';
 
-import type { Gender } from '@outfit-now/shared-types';
+import { useAppTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../hooks/useAuth';
 import { updateMe, requestExport, deleteAccount } from '../../lib/auth';
 
 const STYLE_TAGS = [
-  'Minimaliste', 'Casual', 'Classique', 'Sportswear', 'Bohème',
-  'Urbain', 'Chic', 'Vintage', 'Streetwear', 'Business',
+  'Minimaliste',
+  'Casual',
+  'Classique',
+  'Sportswear',
+  'Bohème',
+  'Urbain',
+  'Chic',
+  'Vintage',
+  'Streetwear',
+  'Business',
 ];
 
 const GENDER_OPTIONS: { label: string; value: Gender; sub: string }[] = [
@@ -31,6 +41,7 @@ const GENDER_OPTIONS: { label: string; value: Gender; sub: string }[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { user, logout, refresh } = useAuthStore();
   const [editing, setEditing] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
@@ -40,15 +51,18 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
 
   function toggleStyle(tag: string) {
-    setStylePref((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
+    setStylePref((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
 
   async function handleSave() {
     setSaving(true);
     try {
-      await updateMe({ firstName, lastName, gender: gender ?? undefined, stylePreferences: stylePref });
+      await updateMe({
+        firstName,
+        lastName,
+        gender: gender ?? undefined,
+        stylePreferences: stylePref,
+      });
       await refresh();
       setEditing(false);
     } catch {
@@ -59,24 +73,20 @@ export default function ProfileScreen() {
   }
 
   async function handleExport() {
-    Alert.alert(
-      'Exporter mes données',
-      'Tu recevras un email avec tes données dans les 24h.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Confirmer',
-          onPress: async () => {
-            try {
-              await requestExport();
-              Alert.alert('Demande envoyée', 'Tu recevras un email sous 24h.');
-            } catch {
-              Alert.alert('Erreur', 'Réessaie plus tard.');
-            }
-          },
+    Alert.alert('Exporter mes données', 'Tu recevras un email avec tes données dans les 24h.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Confirmer',
+        onPress: async () => {
+          try {
+            await requestExport();
+            Alert.alert('Demande envoyée', 'Tu recevras un email sous 24h.');
+          } catch {
+            Alert.alert('Erreur', 'Réessaie plus tard.');
+          }
         },
-      ],
-    );
+      },
+    ]);
   }
 
   async function handleDelete() {
@@ -109,72 +119,135 @@ export default function ProfileScreen() {
   }
 
   const genderLabel = GENDER_OPTIONS.find((g) => g.value === user?.gender)?.label ?? '—';
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?';
+
+  const headerColors: [string, string, string] = theme.dark
+    ? ['#0f172a', '#0a0f1e', '#0a0f1e']
+    : ['#dbeafe', '#f8faff', '#ffffff'];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <StatusBar barStyle="dark-content" />
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+    >
+      <StatusBar barStyle={theme.colors.statusBar} />
 
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.eyebrow}>MON</Text>
-          <Text style={styles.title}>PROFIL</Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: spacing[3], alignItems: 'center' }}>
-          {!editing && (
-            <TouchableOpacity onPress={() => setEditing(true)} style={styles.editBtn}>
-              <Text style={styles.editBtnText}>MODIFIER</Text>
+      <LinearGradient
+        colors={headerColors}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Mon profil</Text>
+          <View style={{ flexDirection: 'row', gap: spacing[3], alignItems: 'center' }}>
+            {!editing && (
+              <TouchableOpacity onPress={() => setEditing(true)} style={styles.editBtn}>
+                <Text style={styles.editBtnText}>Modifier</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/settings' as never)}
+              style={[
+                styles.settingsBtn,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+            >
+              <Text style={[styles.settingsBtnText, { color: theme.colors.textMuted }]}>⚙</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => router.push('/(app)/settings' as never)} style={styles.settingsBtn}>
-            <Text style={styles.settingsBtnText}>⚙</Text>
-          </TouchableOpacity>
+          </View>
+        </View>
+      </LinearGradient>
+
+      {/* Avatar */}
+      <View
+        style={[
+          styles.avatarRow,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+        ]}
+      >
+        <LinearGradient
+          colors={['#1e40af', '#2563eb', '#00c4bf']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.avatar}
+        >
+          <Text style={styles.avatarInitials}>{initials}</Text>
+        </LinearGradient>
+        <View style={styles.avatarInfo}>
+          <Text style={[styles.avatarName, { color: theme.colors.textPrimary }]}>
+            {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mon compte'}
+          </Text>
+          <Text style={[styles.avatarEmail, { color: theme.colors.textMuted }]}>
+            {user?.email ?? ''}
+          </Text>
         </View>
       </View>
 
       {/* Infos */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>INFORMATIONS</Text>
+      <View
+        style={[
+          styles.section,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>INFORMATIONS</Text>
         {editing ? (
           <>
             <View style={styles.fieldRow}>
               <View style={styles.fieldHalf}>
-                <Text style={styles.fieldLabel}>PRÉNOM</Text>
+                <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>PRÉNOM</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.colors.textPrimary }]}
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="Jean"
-                  placeholderTextColor={colors.neutral[700]}
-                  keyboardAppearance="light"
+                  placeholderTextColor={theme.colors.textMuted}
+                  keyboardAppearance={theme.dark ? 'dark' : 'light'}
                 />
-                <View style={styles.inputLine} />
+                <View style={[styles.inputLine, { backgroundColor: theme.colors.border }]} />
               </View>
               <View style={styles.fieldHalf}>
-                <Text style={styles.fieldLabel}>NOM</Text>
+                <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>NOM</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: theme.colors.textPrimary }]}
                   value={lastName}
                   onChangeText={setLastName}
                   placeholder="Dupont"
-                  placeholderTextColor={colors.neutral[700]}
-                  keyboardAppearance="light"
+                  placeholderTextColor={theme.colors.textMuted}
+                  keyboardAppearance={theme.dark ? 'dark' : 'light'}
                 />
-                <View style={styles.inputLine} />
+                <View style={[styles.inputLine, { backgroundColor: theme.colors.border }]} />
               </View>
             </View>
-
-            <Text style={styles.fieldLabel}>GENRE</Text>
+            <Text style={[styles.fieldLabel, { color: theme.colors.textMuted }]}>GENRE</Text>
             <View style={styles.genderGrid}>
               {GENDER_OPTIONS.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
-                  style={[styles.genderCard, gender === opt.value && styles.genderCardActive]}
+                  style={[
+                    styles.genderCard,
+                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                    gender === opt.value && styles.genderCardActive,
+                  ]}
                   onPress={() => setGender(opt.value)}
                 >
-                  <Text style={[styles.genderLabel, gender === opt.value && styles.genderLabelActive]}>
+                  <Text
+                    style={[
+                      styles.genderLabel,
+                      { color: theme.colors.textPrimary },
+                      gender === opt.value && styles.genderLabelActive,
+                    ]}
+                  >
                     {opt.label}
                   </Text>
-                  <Text style={[styles.genderSub, gender === opt.value && styles.genderSubActive]}>
+                  <Text
+                    style={[
+                      styles.genderSub,
+                      { color: theme.colors.textMuted },
+                      gender === opt.value && styles.genderSubActive,
+                    ]}
+                  >
                     {opt.sub}
                   </Text>
                 </TouchableOpacity>
@@ -192,14 +265,19 @@ export default function ProfileScreen() {
       </View>
 
       {/* Abonnement */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>ABONNEMENT</Text>
+      <View
+        style={[
+          styles.section,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>ABONNEMENT</Text>
         <View style={styles.planRow}>
           <View>
-            <Text style={styles.planName}>
+            <Text style={[styles.planName, { color: theme.colors.textPrimary }]}>
               {user?.tier === 'premium' ? 'PREMIUM' : 'GRATUIT'}
             </Text>
-            <Text style={styles.planSub}>
+            <Text style={[styles.planSub, { color: theme.colors.textMuted }]}>
               {user?.tier === 'premium'
                 ? 'Briefs illimités · Dressing illimité'
                 : '3 briefs/jour · 50 pièces max'}
@@ -207,10 +285,17 @@ export default function ProfileScreen() {
           </View>
           {user?.tier !== 'premium' && (
             <TouchableOpacity
-              style={styles.upgradeBtn}
               onPress={() => router.push('/(app)/premium' as never)}
+              style={{ borderRadius: 9999, overflow: 'hidden' }}
             >
-              <Text style={styles.upgradeBtnText}>PREMIUM →</Text>
+              <LinearGradient
+                colors={['#1e40af', '#2563eb', '#00c4bf']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.upgradeBtn}
+              >
+                <Text style={styles.upgradeBtnText}>PREMIUM →</Text>
+              </LinearGradient>
             </TouchableOpacity>
           )}
         </View>
@@ -218,29 +303,53 @@ export default function ProfileScreen() {
 
       {/* Style préférences */}
       {editing ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>STYLES PRÉFÉRÉS</Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>
+            STYLES PRÉFÉRÉS
+          </Text>
           <View style={styles.tagsGrid}>
             {STYLE_TAGS.map((tag) => (
               <TouchableOpacity
                 key={tag}
-                style={[styles.tag, stylePref.includes(tag) && styles.tagActive]}
+                style={[
+                  styles.tag,
+                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                  stylePref.includes(tag) && styles.tagActive,
+                ]}
                 onPress={() => toggleStyle(tag)}
               >
-                <Text style={[styles.tagText, stylePref.includes(tag) && styles.tagTextActive]}>
-                  {tag.toUpperCase()}
+                <Text
+                  style={[
+                    styles.tagText,
+                    { color: theme.colors.textMuted },
+                    stylePref.includes(tag) && styles.tagTextActive,
+                  ]}
+                >
+                  {tag}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
       ) : (user?.stylePreferences?.length ?? 0) > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>STYLES PRÉFÉRÉS</Text>
+        <View
+          style={[
+            styles.section,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>
+            STYLES PRÉFÉRÉS
+          </Text>
           <View style={styles.tagsGrid}>
             {(user?.stylePreferences ?? []).map((tag) => (
               <View key={tag} style={[styles.tag, styles.tagActive]}>
-                <Text style={[styles.tagText, styles.tagTextActive]}>{tag.toUpperCase()}</Text>
+                <Text style={[styles.tagText, styles.tagTextActive]}>{tag}</Text>
               </View>
             ))}
           </View>
@@ -250,10 +359,19 @@ export default function ProfileScreen() {
       {/* Boutons édition */}
       {editing && (
         <View style={styles.editActions}>
-          <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-            {saving
-              ? <ActivityIndicator color={colors.neutral[950]} />
-              : <Text style={styles.saveBtnText}>ENREGISTRER</Text>}
+          <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveBtnWrap}>
+            <LinearGradient
+              colors={['#1e40af', '#2563eb', '#00c4bf']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveBtn}
+            >
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveBtnText}>ENREGISTRER</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.cancelBtn}
@@ -265,14 +383,27 @@ export default function ProfileScreen() {
               setEditing(false);
             }}
           >
-            <Text style={styles.cancelBtnText}>Annuler</Text>
+            <Text style={[styles.cancelBtnText, { color: theme.colors.textMuted }]}>Annuler</Text>
           </TouchableOpacity>
         </View>
       )}
 
+      {/* Style Pass */}
+      <TouchableOpacity
+        style={styles.stylePassBanner}
+        onPress={() => router.push('/(app)/style-pass' as never)}
+        activeOpacity={0.8}
+      >
+        <View>
+          <Text style={styles.stylePassLabel}>🏆 STYLE PASS</Text>
+          <Text style={styles.stylePassSub}>Classement · Récompenses · Défis</Text>
+        </View>
+        <Text style={styles.stylePassArrow}>→</Text>
+      </TouchableOpacity>
+
       {/* Mannequin */}
       <TouchableOpacity
-        style={styles.avatarBanner}
+        style={[styles.avatarBanner, { backgroundColor: theme.dark ? '#1e3a5f' : '#dbeafe' }]}
         onPress={() => router.push('/(app)/avatar' as never)}
         activeOpacity={0.8}
       >
@@ -284,10 +415,15 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       {/* RGPD */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>MES DONNÉES</Text>
+      <View
+        style={[
+          styles.section,
+          { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+        ]}
+      >
+        <Text style={[styles.sectionTitle, { color: theme.colors.textMuted }]}>MES DONNÉES</Text>
         <TouchableOpacity style={styles.linkRow} onPress={handleExport}>
-          <Text style={styles.linkText}>↓  Exporter mes données (RGPD)</Text>
+          <Text style={styles.linkText}>↓ Exporter mes données (RGPD)</Text>
         </TouchableOpacity>
       </View>
 
@@ -303,259 +439,206 @@ export default function ProfileScreen() {
 }
 
 function Row({ label, value }: { label: string; value?: string | null }) {
+  const theme = useAppTheme();
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value ?? '—'}</Text>
+      <Text style={[styles.rowLabel, { color: theme.colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.rowValue, { color: theme.colors.textPrimary }]}>{value ?? '—'}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral[950] },
-  content: {
-    padding: spacing[6],
+  container: { flex: 1 },
+  content: { padding: spacing[5], paddingTop: 0, paddingBottom: spacing[12], gap: spacing[4] },
+
+  headerGradient: {
+    marginHorizontal: -spacing[5],
+    paddingHorizontal: spacing[5],
     paddingTop: spacing[16],
-    paddingBottom: spacing[12],
-    gap: spacing[4],
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[900],
     paddingBottom: spacing[4],
+    marginBottom: spacing[2],
   },
-  eyebrow: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[500],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
-  },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-  },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title: { fontFamily: 'Poppins_700Bold', fontSize: 22 },
   editBtn: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.primary[600],
+    borderColor: '#00C4BF',
     borderRadius: 9999,
   },
-  editBtnText: {
-    color: colors.primary[400],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 2,
-  },
+  editBtnText: { fontFamily: 'Poppins_600SemiBold', color: '#00C4BF', fontSize: 13 },
   settingsBtn: {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderWidth: 1,
-    borderColor: colors.neutral[700],
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingsBtnText: {
-    fontSize: 16,
-    color: colors.neutral[500],
-  },
-  section: {
-    backgroundColor: colors.neutral[900],
+  settingsBtnText: { fontSize: 16 },
+
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[4],
+    padding: spacing[4],
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarInitials: { fontFamily: 'Poppins_700Bold', fontSize: 20, color: '#FFFFFF' },
+  avatarInfo: { flex: 1, gap: 2 },
+  avatarName: { fontFamily: 'Poppins_600SemiBold', fontSize: 15 },
+  avatarEmail: { fontFamily: 'Poppins_400Regular', fontSize: 12 },
+
+  section: {
+    borderWidth: 1,
     padding: spacing[5],
     gap: spacing[3],
-    borderRadius: 14,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  sectionTitle: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
-  },
+  sectionTitle: { fontFamily: 'Poppins_700Bold', fontSize: 10, letterSpacing: 2 },
+
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing[1],
   },
-  rowLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
-  },
-  rowValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[300],
-    fontWeight: typography.fontWeight.medium,
-  },
+  rowLabel: { fontFamily: 'Poppins_500Medium', fontSize: 10, letterSpacing: 1 },
+  rowValue: { fontFamily: 'Poppins_500Medium', fontSize: 13 },
+
   fieldRow: { flexDirection: 'row', gap: spacing[4] },
   fieldHalf: { flex: 1, gap: spacing[2] },
-  fieldLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
-  },
+  fieldLabel: { fontFamily: 'Poppins_500Medium', fontSize: 10, letterSpacing: 1 },
   input: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[0],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 15,
     paddingVertical: spacing[2],
     backgroundColor: 'transparent',
   },
-  inputLine: {
-    height: 1,
-    backgroundColor: colors.neutral[800],
-  },
-  genderGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  genderCard: {
-    width: '46%',
-    borderWidth: 1,
-    borderColor: colors.neutral[700],
-    padding: spacing[3],
-    gap: 2,
-    backgroundColor: colors.neutral[900],
-    borderRadius: 12,
-  },
-  genderCardActive: {
-    borderColor: colors.primary[500],
-    backgroundColor: 'rgba(36,72,216,0.08)',
-  },
-  genderLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
-    fontWeight: typography.fontWeight.semibold,
-  },
-  genderLabelActive: { color: colors.primary[300] },
-  genderSub: {
-    fontSize: 9,
-    color: colors.neutral[700],
-  },
-  genderSubActive: { color: colors.primary[700] },
-  planRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  planName: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.black,
-    color: colors.neutral[0],
-    letterSpacing: 2,
-  },
-  planSub: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[600],
-    marginTop: 3,
-  },
-  upgradeBtn: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    backgroundColor: colors.primary[500],
-    borderRadius: 9999,
-  },
+  inputLine: { height: 1 },
+
+  genderGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] },
+  genderCard: { width: '46%', borderWidth: 1, padding: spacing[3], gap: 2, borderRadius: 12 },
+  genderCardActive: { borderColor: '#00C4BF', backgroundColor: 'rgba(0,196,191,0.08)' },
+  genderLabel: { fontFamily: 'Poppins_500Medium', fontSize: 13 },
+  genderLabelActive: { color: '#00C4BF' },
+  genderSub: { fontFamily: 'Poppins_400Regular', fontSize: 10 },
+  genderSubActive: { color: '#00C4BF' },
+
+  planRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  planName: { fontFamily: 'Poppins_700Bold', fontSize: 15, letterSpacing: 1 },
+  planSub: { fontFamily: 'Poppins_400Regular', fontSize: 12, marginTop: 3 },
+  upgradeBtn: { paddingHorizontal: spacing[4], paddingVertical: spacing[2], borderRadius: 9999 },
   upgradeBtnText: {
-    color: colors.neutral[950],
-    fontSize: 9,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 2,
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+    fontSize: 10,
+    letterSpacing: 1,
   },
+
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] },
   tag: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.neutral[700],
-    backgroundColor: colors.neutral[900],
     borderRadius: 9999,
   },
-  tagActive: {
-    backgroundColor: colors.primary[600],
-    borderColor: colors.primary[600],
-  },
-  tagText: {
-    fontSize: 9,
-    color: colors.neutral[500],
-    letterSpacing: 1.5,
-    fontWeight: typography.fontWeight.medium,
-  },
-  tagTextActive: { color: colors.neutral[950] },
+  tagActive: { backgroundColor: '#00C4BF', borderColor: '#00C4BF' },
+  tagText: { fontFamily: 'Poppins_500Medium', fontSize: 12 },
+  tagTextActive: { color: '#FFFFFF' },
+
   editActions: { gap: spacing[2] },
-  saveBtn: {
-    backgroundColor: colors.primary[500],
-    paddingVertical: spacing[4],
-    alignItems: 'center',
-    borderRadius: 9999,
+  saveBtnWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#1e40af',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  saveBtnText: {
-    color: colors.neutral[950],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
-  },
-  cancelBtn: {
-    paddingVertical: spacing[3],
-    alignItems: 'center',
-  },
-  cancelBtnText: { color: colors.neutral[600], fontSize: typography.fontSize.sm },
+  saveBtn: { paddingVertical: spacing[4], alignItems: 'center', borderRadius: 14 },
+  saveBtnText: { fontFamily: 'Poppins_700Bold', color: '#FFFFFF', fontSize: 13, letterSpacing: 2 },
+  cancelBtn: { paddingVertical: spacing[3], alignItems: 'center' },
+  cancelBtnText: { fontFamily: 'Poppins_400Regular', fontSize: 13 },
+
   linkRow: { paddingVertical: spacing[2] },
-  linkText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[400],
-  },
+  linkText: { fontFamily: 'Poppins_500Medium', fontSize: 13, color: '#00C4BF' },
+
   logoutBtn: {
+    backgroundColor: 'rgba(255,107,107,0.10)',
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: 'rgba(255,107,107,0.20)',
     paddingVertical: spacing[4],
     alignItems: 'center',
-    borderRadius: 9999,
+    borderRadius: 14,
   },
-  logoutText: {
-    color: colors.neutral[400],
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
-  },
-  deleteBtn: {
-    paddingVertical: spacing[3],
+  logoutText: { fontFamily: 'Poppins_700Bold', color: '#FF6B6B', fontSize: 13, letterSpacing: 2 },
+  deleteBtn: { paddingVertical: spacing[3], alignItems: 'center' },
+  deleteBtnText: { fontFamily: 'Poppins_400Regular', color: '#FF6B6B', fontSize: 12, opacity: 0.7 },
+
+  stylePassBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF8E1',
+    borderWidth: 1,
+    borderColor: '#FFD54F',
+    padding: spacing[5],
+    borderRadius: 16,
   },
-  deleteBtnText: { color: colors.error, fontSize: typography.fontSize.xs, letterSpacing: 1 },
+  stylePassLabel: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 13,
+    color: '#F59E0B',
+    letterSpacing: 1,
+  },
+  stylePassSub: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#F59E0B',
+    marginTop: 3,
+    opacity: 0.8,
+  },
+  stylePassArrow: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: '#F59E0B' },
+
   avatarBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.neutral[900],
     borderWidth: 1,
-    borderColor: colors.primary[600],
+    borderColor: '#00C4BF',
     padding: spacing[5],
-    borderRadius: 14,
+    borderRadius: 16,
   },
   avatarBannerLabel: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.black,
-    color: colors.primary[400],
-    letterSpacing: 2,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 13,
+    color: '#00C4BF',
+    letterSpacing: 1,
   },
   avatarBannerSub: {
-    fontSize: 10,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#00C4BF',
     marginTop: 3,
-    letterSpacing: 0.5,
+    opacity: 0.75,
   },
-  avatarBannerArrow: {
-    fontSize: typography.fontSize.xl,
-    color: colors.primary[500],
-  },
+  avatarBannerArrow: { fontFamily: 'Poppins_700Bold', fontSize: 18, color: '#00C4BF' },
 });

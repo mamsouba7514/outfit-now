@@ -3,6 +3,8 @@ import { colors, typography, spacing } from '@outfit-now/design-tokens';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   RefreshControl,
   ScrollView,
@@ -13,16 +15,20 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { darkTheme } from '../../hooks/useTheme';
 import {
   getStylePassProfile,
   getCurrentAward,
   getStyleCards,
   revealStyleCard,
+  submitToAward,
   type StylePassProfile,
   type StyleAward,
   type StyleCard,
   type StyleRank,
 } from '../../lib/stylePass';
+
+const D = darkTheme.colors;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -39,13 +45,13 @@ const RANK_THRESHOLDS: Record<StyleRank, number> = {
   STYLE: 1000,
   EXPERT: 5000,
   MAITRE: 20000,
-  ICONE: 75000,
+  ICONE: 50000,
 };
 const CARD_TIER_COLORS = {
   BRONZE: '#CD7F32',
   SILVER: '#C0C0C0',
   GOLD: colors.primary[400],
-  ICONIQUE: '#E8194A',
+  ICONIQUE: '#00c4bf',
 };
 
 // ─── Animated energy counter ─────────────────────────────────────────────────
@@ -185,9 +191,21 @@ function StyleCardItem({ card, onReveal }: { card: StyleCard; onReveal: (id: str
   );
 }
 
+const STYLE_THRESHOLD = 1000;
+
 // ─── Award banner ─────────────────────────────────────────────────────────────
 
-function AwardBanner({ award }: { award: StyleAward }) {
+function AwardBanner({
+  award,
+  profile,
+  onSubmitted,
+}: {
+  award: StyleAward;
+  profile: StylePassProfile | null;
+  onSubmitted: (updated: StyleAward) => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+
   const statusLabel =
     award.status === 'OPEN'
       ? 'SOUMISSIONS OUVERTES'
@@ -198,8 +216,30 @@ function AwardBanner({ award }: { award: StyleAward }) {
     award.status === 'OPEN'
       ? colors.primary[400]
       : award.status === 'VOTING'
-        ? '#E8194A'
-        : colors.neutral[500];
+        ? '#00c4bf'
+        : D.textMuted;
+
+  const canParticipate = (profile?.totalEnergy ?? 0) >= STYLE_THRESHOLD;
+  const alreadySubmitted = !!award.userSubmission;
+  const isOpen = award.status === 'OPEN';
+
+  async function handleSubmit() {
+    if (!isOpen || alreadySubmitted || !canParticipate) return;
+    setSubmitting(true);
+    try {
+      await submitToAward(award.id, { caption: award.occasion });
+      onSubmitted({
+        ...award,
+        userSubmission: { id: '', voteCount: 0 },
+        submissionCount: award.submissionCount + 1,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erreur. Réessaie.';
+      Alert.alert('Erreur', msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <View style={styles.awardCard}>
@@ -213,14 +253,37 @@ function AwardBanner({ award }: { award: StyleAward }) {
         {new Date(award.weekStart).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}{' '}
         → {new Date(award.weekEnd).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
       </Text>
-      {award.userSubmission && (
+
+      {alreadySubmitted ? (
         <View style={styles.awardSubmitted}>
           <Ionicons name="checkmark-circle" size={14} color={colors.primary[400]} />
           <Text style={styles.awardSubmittedText}>
-            SOUMIS — {award.userSubmission.voteCount} VOTES
+            SOUMIS — {award.userSubmission!.voteCount} VOTES
           </Text>
         </View>
-      )}
+      ) : isOpen ? (
+        !canParticipate ? (
+          <View style={styles.awardLocked}>
+            <Ionicons name="lock-closed" size={12} color={D.textMuted} />
+            <Text style={styles.awardLockedText}>
+              RANG STYLÉ·E REQUIS · {STYLE_THRESHOLD.toLocaleString('fr-FR')} PTS MIN
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.awardSubmitBtn}
+            onPress={handleSubmit}
+            disabled={submitting}
+            activeOpacity={0.8}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color={D.background} />
+            ) : (
+              <Text style={styles.awardSubmitBtnText}>PARTICIPER →</Text>
+            )}
+          </TouchableOpacity>
+        )
+      ) : null}
     </View>
   );
 }
@@ -301,7 +364,7 @@ export default function StylePassScreen() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="arrow-back" size={22} color={colors.neutral[0]} />
+          <Ionicons name="arrow-back" size={22} color={D.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>STYLE PASS</Text>
         <View style={{ width: 22 }} />
@@ -319,7 +382,7 @@ export default function StylePassScreen() {
           </View>
           {profile.streakDays > 0 && (
             <View style={styles.streak}>
-              <Ionicons name="flame" size={14} color="#E8194A" />
+              <Ionicons name="flame" size={14} color={colors.primary[500]} />
               <Text style={styles.streakText}>{profile.streakDays} JOURS DE SUITE</Text>
             </View>
           )}
@@ -340,7 +403,7 @@ export default function StylePassScreen() {
       </View>
 
       {award ? (
-        <AwardBanner award={award} />
+        <AwardBanner award={award} profile={profile} onSubmitted={setAward} />
       ) : !loading ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>AUCUN AWARD CETTE SEMAINE</Text>
@@ -373,7 +436,7 @@ export default function StylePassScreen() {
           <Ionicons
             name="card-outline"
             size={32}
-            color={colors.neutral[700]}
+            color={D.textMuted}
             style={{ marginBottom: spacing[2] }}
           />
           <Text style={styles.emptyStateText}>PAS ENCORE DE STYLE CARD</Text>
@@ -412,7 +475,7 @@ export default function StylePassScreen() {
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.neutral[950] },
+  root: { flex: 1, backgroundColor: D.background },
   content: { paddingHorizontal: spacing[4] },
 
   header: {
@@ -424,17 +487,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 13,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[0],
+    color: D.textPrimary,
     letterSpacing: 4,
   },
   divider: { height: 2, backgroundColor: colors.primary[400], width: 40, marginBottom: spacing[5] },
 
   energyBlock: { alignItems: 'center', marginBottom: spacing[6], gap: spacing[2] },
-  energyLabel: { fontSize: 10, color: colors.neutral[500], letterSpacing: 4 },
+  energyLabel: { fontSize: 10, color: D.textMuted, letterSpacing: 4 },
   energyValue: {
     fontSize: 52,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[0],
+    color: D.textPrimary,
     lineHeight: 60,
   },
   rankBadge: {
@@ -447,20 +510,20 @@ const styles = StyleSheet.create({
   rankBadgeText: {
     fontSize: 11,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[950],
+    color: D.background,
     letterSpacing: 3,
   },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing[1] },
   streakText: {
     fontSize: 10,
-    color: '#E8194A',
+    color: '#00c4bf',
     letterSpacing: 2,
     fontWeight: typography.fontWeight.bold,
   },
 
   sectionLabel: {
     fontSize: 10,
-    color: colors.neutral[500],
+    color: D.textMuted,
     letterSpacing: 3,
     marginBottom: spacing[3],
   },
@@ -478,9 +541,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: D.border,
     borderWidth: 1,
-    borderColor: colors.neutral[700],
+    borderColor: D.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
@@ -490,27 +553,27 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.neutral[950],
+    backgroundColor: D.background,
     borderColor: colors.primary[400],
     borderWidth: 2,
   },
   rankDotInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary[400] },
-  rankDotLabel: { fontSize: 7, color: colors.neutral[700], letterSpacing: 1, textAlign: 'center' },
-  rankDotLabelActive: { color: colors.neutral[300] },
-  rankDotThreshold: { fontSize: 7, color: colors.neutral[700], textAlign: 'center' },
+  rankDotLabel: { fontSize: 7, color: D.textMuted, letterSpacing: 1, textAlign: 'center' },
+  rankDotLabelActive: { color: D.textSecondary },
+  rankDotThreshold: { fontSize: 7, color: D.textMuted, textAlign: 'center' },
   rankLine: {
     position: 'absolute',
     top: 5,
     left: '50%',
     right: '-50%',
     height: 1,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: D.border,
   },
   rankLineActive: { backgroundColor: colors.primary[400] },
 
   progressBarWrap: {
     height: 4,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: D.border,
     borderRadius: 2,
     marginTop: spacing[4],
     overflow: 'hidden',
@@ -518,16 +581,16 @@ const styles = StyleSheet.create({
   progressBarFill: { height: 4, backgroundColor: colors.primary[400], borderRadius: 2 },
   progressLabel: {
     fontSize: 9,
-    color: colors.neutral[600],
+    color: D.textMuted,
     letterSpacing: 1,
     textAlign: 'right',
     marginTop: 4,
   },
 
   awardCard: {
-    backgroundColor: colors.neutral[900],
+    backgroundColor: D.surface,
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: D.border,
     padding: spacing[4],
     borderRadius: 16,
     gap: spacing[2],
@@ -536,14 +599,14 @@ const styles = StyleSheet.create({
   awardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   awardStatusDot: { width: 6, height: 6, borderRadius: 3 },
   awardStatus: { fontSize: 9, fontWeight: typography.fontWeight.bold, letterSpacing: 2, flex: 1 },
-  awardCount: { fontSize: 9, color: colors.neutral[600], letterSpacing: 1 },
+  awardCount: { fontSize: 9, color: D.textMuted, letterSpacing: 1 },
   awardOccasion: {
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[0],
+    color: D.textPrimary,
     letterSpacing: 2,
   },
-  awardDates: { fontSize: 10, color: colors.neutral[500], letterSpacing: 1 },
+  awardDates: { fontSize: 10, color: D.textMuted, letterSpacing: 1 },
   awardSubmitted: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing[1] },
   awardSubmittedText: {
     fontSize: 9,
@@ -551,9 +614,42 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     fontWeight: typography.fontWeight.bold,
   },
+  awardLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[3],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    backgroundColor: D.surfaceAlt,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  awardLockedText: {
+    fontSize: 9,
+    color: D.textMuted,
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.bold,
+  },
+  awardSubmitBtn: {
+    marginTop: spacing[3],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    backgroundColor: colors.primary[400],
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  awardSubmitBtnText: {
+    fontSize: 10,
+    color: D.background,
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.black,
+  },
 
   card: {
-    backgroundColor: colors.neutral[900],
+    backgroundColor: D.surface,
     borderWidth: 1,
     borderRadius: 16,
     padding: spacing[4],
@@ -569,13 +665,13 @@ const styles = StyleSheet.create({
   cardTierText: {
     fontSize: 9,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[950],
+    color: D.background,
     letterSpacing: 2,
   },
   cardPartner: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
+    color: D.textPrimary,
     letterSpacing: 1,
   },
   cardRevealed: { alignItems: 'center', gap: spacing[2] },
@@ -583,29 +679,29 @@ const styles = StyleSheet.create({
   cardPromo: {
     fontSize: 16,
     fontWeight: typography.fontWeight.black,
-    color: colors.neutral[0],
+    color: D.textPrimary,
     letterSpacing: 4,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: D.surfaceAlt,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
     borderRadius: 8,
   },
-  cardExpiry: { fontSize: 10, color: colors.neutral[500], letterSpacing: 1 },
-  cardExpiredText: { fontSize: 12, color: colors.neutral[600], letterSpacing: 3 },
+  cardExpiry: { fontSize: 10, color: D.textMuted, letterSpacing: 1 },
+  cardExpiredText: { fontSize: 12, color: D.textMuted, letterSpacing: 3 },
   cardUnrevealed: { alignItems: 'center', gap: spacing[2], paddingVertical: spacing[4] },
-  cardScratchIcon: { fontSize: 36, color: colors.neutral[700] },
-  cardScratchHint: { fontSize: 10, color: colors.neutral[600], letterSpacing: 3 },
+  cardScratchIcon: { fontSize: 36, color: D.textMuted },
+  cardScratchHint: { fontSize: 10, color: D.textMuted, letterSpacing: 3 },
 
   howItWorksCard: {
-    backgroundColor: colors.neutral[900],
+    backgroundColor: D.surface,
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: D.border,
     padding: spacing[4],
     borderRadius: 16,
     gap: spacing[3],
   },
   howItWorksRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
-  howItWorksLabel: { flex: 1, fontSize: 12, color: colors.neutral[300], letterSpacing: 0.5 },
+  howItWorksLabel: { flex: 1, fontSize: 12, color: D.textSecondary, letterSpacing: 0.5 },
   howItWorksPts: {
     fontSize: 11,
     fontWeight: typography.fontWeight.bold,
@@ -614,13 +710,13 @@ const styles = StyleSheet.create({
   },
   howItWorksNote: {
     fontSize: 10,
-    color: colors.neutral[600],
+    color: D.textMuted,
     lineHeight: 16,
     marginTop: spacing[2],
     fontStyle: 'italic',
   },
 
   emptyState: { alignItems: 'center', gap: spacing[2], paddingVertical: spacing[4] },
-  emptyStateText: { fontSize: 11, color: colors.neutral[600], letterSpacing: 3 },
-  emptyStateSub: { fontSize: 11, color: colors.neutral[700], textAlign: 'center', lineHeight: 16 },
+  emptyStateText: { fontSize: 11, color: D.textMuted, letterSpacing: 3 },
+  emptyStateSub: { fontSize: 11, color: D.textMuted, textAlign: 'center', lineHeight: 16 },
 });

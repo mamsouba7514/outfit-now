@@ -9,7 +9,7 @@ const RANK_THRESHOLDS = {
   STYLE: 1000,
   EXPERT: 5000,
   MAITRE: 20000,
-  ICONE: 75000,
+  ICONE: 50000,
 } as const;
 
 type StyleRank = keyof typeof RANK_THRESHOLDS;
@@ -61,6 +61,43 @@ async function getOrCreateProfile(userId: string) {
     create: { userId },
     update: {},
   });
+}
+
+type EnergyAction = keyof typeof ENERGY_POINTS;
+
+export async function awardEnergy(
+  userId: string,
+  action: EnergyAction,
+  refId?: string,
+): Promise<void> {
+  try {
+    const profile = await getOrCreateProfile(userId);
+    const since = todayStart();
+    const todayCount = await prisma.energyTransaction.count({
+      where: { profileId: profile.id, action, createdAt: { gte: since } },
+    });
+    if (todayCount >= DAILY_LIMITS[action]) return;
+
+    let points: number = ENERGY_POINTS[action];
+    if (action === 'SCAN' && todayCount >= 5) points = 3;
+
+    const [, updated] = await prisma.$transaction([
+      prisma.energyTransaction.create({
+        data: { profileId: profile.id, action, points, refId: refId ?? null },
+      }),
+      prisma.stylePassProfile.update({
+        where: { id: profile.id },
+        data: { totalEnergy: { increment: points }, lastActivityAt: new Date() },
+      }),
+    ]);
+
+    const newRank = computeRank(updated.totalEnergy);
+    if (newRank !== profile.rank) {
+      await prisma.stylePassProfile.update({ where: { id: profile.id }, data: { rank: newRank } });
+    }
+  } catch {
+    // non-blocking — never fail the main flow for points
+  }
 }
 
 const earnSchema = z.object({
@@ -215,8 +252,10 @@ export async function stylePassRoutes(app: FastifyInstance) {
     if (award.status !== 'OPEN') return reply.status(403).send({ message: 'Submissions closed' });
 
     const profile = await getOrCreateProfile(userId);
-    if (profile.totalEnergy < RANK_THRESHOLDS.EXPERT) {
-      return reply.status(403).send({ message: 'Reach Expert rank (5,000 energy) to submit' });
+    if (profile.totalEnergy < RANK_THRESHOLDS.STYLE) {
+      return reply
+        .status(403)
+        .send({ message: 'Atteins le rang STYLÉ·E (1 000 pts) pour participer aux Style Awards' });
     }
 
     try {

@@ -73,9 +73,7 @@ export default function ScanValidationScreen() {
   }, [id]);
 
   function toggleSeason(s: Season) {
-    setSeasons((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s],
-    );
+    setSeasons((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
   }
 
   function addTag() {
@@ -102,8 +100,9 @@ export default function ScanValidationScreen() {
       });
       addItem(updated);
       router.replace(`/(app)/dressing/${id}` as never);
-    } catch {
-      Alert.alert('Erreur', 'Impossible de sauvegarder. Réessaie.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('Erreur', msg);
     } finally {
       setSaving(false);
     }
@@ -168,7 +167,9 @@ export default function ScanValidationScreen() {
 
       {/* Marque */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>MARQUE <Text style={styles.optional}>(optionnel)</Text></Text>
+        <Text style={styles.sectionLabel}>
+          MARQUE <Text style={styles.optional}>(optionnel)</Text>
+        </Text>
         <TextInput
           style={styles.textInput}
           value={brand}
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1],
     borderWidth: 1,
     borderColor: colors.primary[800],
-    backgroundColor: 'rgba(36,72,216,0.08)',
+    backgroundColor: 'rgba(0,196,191,0.08)',
   },
   tagBubbleText: {
     fontSize: 9,
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[4],
     alignItems: 'center',
     borderRadius: 9999,
-    shadowColor: '#2448D8',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,

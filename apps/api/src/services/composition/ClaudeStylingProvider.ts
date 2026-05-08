@@ -3,7 +3,10 @@ import type { DressingItem } from '@prisma/client';
 import { z } from 'zod';
 
 import { env } from '../../lib/env.js';
-import { searchShoppingProducts, type ShoppingProduct } from '../shopping/SerpApiShoppingService.js';
+import {
+  searchShoppingProducts,
+  type ShoppingProduct,
+} from '../shopping/SerpApiShoppingService.js';
 import { buildKarlContext } from '../styleProfile.js';
 
 import type { BriefContext, OutfitProposal, StylingProvider } from './StylingProvider.js';
@@ -16,30 +19,69 @@ type Tier = ReturnType<typeof detectTier>;
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
 const outfitSchema = z.object({
-  outfits: z.array(z.object({
-    itemIds: z.array(z.string()).min(3).max(7),
-    aestheticName: z.string().max(60),
-    colorStory: z.string().max(120),
-    justification: z.string().min(20).max(800),
-    aiScore: z.number().min(0).max(100),
-    shoppingQueries: z.array(z.object({
-      query: z.string(),
-      category: z.string(),
-    })).optional(),
-  })).min(1).max(3),
+  outfits: z
+    .array(
+      z.object({
+        itemIds: z.array(z.string()).min(1).max(7),
+        aestheticName: z
+          .string()
+          .catch('Tenue du jour')
+          .transform((s) => s.slice(0, 60)),
+        colorStory: z
+          .string()
+          .catch('Palette équilibrée')
+          .transform((s) => s.slice(0, 120)),
+        justification: z
+          .string()
+          .catch("Tenue adaptée à l'occasion.")
+          .transform((s) => s.slice(0, 800)),
+        aiScore: z.number().min(0).max(100).catch(75),
+        shoppingQueries: z
+          .array(
+            z.object({
+              query: z.string(),
+              category: z.string(),
+            }),
+          )
+          .optional()
+          .catch([]),
+      }),
+    )
+    .min(1)
+    .max(3),
 });
 
 const shoppingOutfitSchema = z.object({
-  outfits: z.array(z.object({
-    aestheticName: z.string().max(60),
-    colorStory: z.string().max(120),
-    justification: z.string().min(20).max(800),
-    aiScore: z.number().min(0).max(100),
-    shoppingQueries: z.array(z.object({
-      query: z.string(),
-      category: z.string(),
-    })).min(3).max(7),
-  })).min(1).max(3),
+  outfits: z
+    .array(
+      z.object({
+        aestheticName: z
+          .string()
+          .catch('Tenue du jour')
+          .transform((s) => s.slice(0, 60)),
+        colorStory: z
+          .string()
+          .catch('Palette équilibrée')
+          .transform((s) => s.slice(0, 120)),
+        justification: z
+          .string()
+          .catch("Tenue adaptée à l'occasion.")
+          .transform((s) => s.slice(0, 800)),
+        aiScore: z.number().min(0).max(100).catch(75),
+        shoppingQueries: z
+          .array(
+            z.object({
+              query: z.string(),
+              category: z.string(),
+            }),
+          )
+          .min(1)
+          .max(7)
+          .catch([]),
+      }),
+    )
+    .min(1)
+    .max(3),
 });
 
 // ─── Karl — System Prompts ────────────────────────────────────────────────────
@@ -180,7 +222,8 @@ export class ClaudeStylingProvider implements StylingProvider {
     withShopping: boolean,
   ): Promise<OutfitProposal[]> {
     const tier = detectTier(brief.styleNotes);
-    const systemPrompt = tier === 'luxe' ? SYSTEM_LUXE : tier === 'premium' ? SYSTEM_PREMIUM : SYSTEM_STANDARD;
+    const systemPrompt =
+      tier === 'luxe' ? SYSTEM_LUXE : tier === 'premium' ? SYSTEM_PREMIUM : SYSTEM_STANDARD;
     const maxTokens = tier === 'luxe' ? 4096 : tier === 'premium' ? 2560 : 1800;
 
     const dressingDesc = this.buildDressingDesc(dressing);
@@ -195,18 +238,28 @@ export class ClaudeStylingProvider implements StylingProvider {
       briefDesc,
       `\nDressing disponible (${dressing.length} pièces) :\n${dressingDesc}`,
       `\nPropose exactement ${count} tenue(s) distinctes, chacune avec une identité propre.${shoppingInstruction}`,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const message = await this.client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
-      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }] as any,
       messages: [{ role: 'user', content: userContent }],
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      const u = message.usage as { cache_read_input_tokens?: number; cache_creation_input_tokens?: number; input_tokens: number; output_tokens: number };
-      console.log(`[Karl] in:${u.input_tokens} cache_read:${u.cache_read_input_tokens ?? 0} out:${u.output_tokens}`);
+      const u = message.usage as {
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+        input_tokens: number;
+        output_tokens: number;
+      };
+      console.log(
+        `[Karl] in:${u.input_tokens} cache_read:${u.cache_read_input_tokens ?? 0} out:${u.output_tokens}`,
+      );
     }
 
     const text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '{}';
@@ -259,10 +312,7 @@ export class ClaudeStylingProvider implements StylingProvider {
 
   // ── Shopping-based composition ─────────────────────────────────────────────
 
-  private async composeFromShopping(
-    brief: BriefContext,
-    count: number,
-  ): Promise<OutfitProposal[]> {
+  private async composeFromShopping(brief: BriefContext, count: number): Promise<OutfitProposal[]> {
     const tier = detectTier(brief.styleNotes);
     const maxTokens = tier === 'luxe' ? 4096 : tier === 'premium' ? 2560 : 1800;
     const briefDesc = this.buildBriefDesc(brief, tier);
@@ -272,21 +322,35 @@ export class ClaudeStylingProvider implements StylingProvider {
       karlContext,
       briefDesc,
       `\nPropose ${count} tenue(s) complètes à acheter. Chaque tenue doit avoir une identité forte et des pièces qui se répondent.`,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const message = await this.client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
-      system: [{ type: 'text', text: SHOPPING_SYSTEM_LUXE, cache_control: { type: 'ephemeral' } }],
-      messages: [{
-        role: 'user',
-        content: shoppingUserContent,
-      }],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+      system: [
+        { type: 'text', text: SHOPPING_SYSTEM_LUXE, cache_control: { type: 'ephemeral' } },
+      ] as any,
+      messages: [
+        {
+          role: 'user',
+          content: shoppingUserContent,
+        },
+      ],
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      const u = message.usage as { cache_read_input_tokens?: number; cache_creation_input_tokens?: number; input_tokens: number; output_tokens: number };
-      console.log(`[Karl/shopping] in:${u.input_tokens} cache_read:${u.cache_read_input_tokens ?? 0} out:${u.output_tokens}`);
+      const u = message.usage as {
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+        input_tokens: number;
+        output_tokens: number;
+      };
+      console.log(
+        `[Karl/shopping] in:${u.input_tokens} cache_read:${u.cache_read_input_tokens ?? 0} out:${u.output_tokens}`,
+      );
     }
 
     const text = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '{}';
@@ -340,11 +404,12 @@ export class ClaudeStylingProvider implements StylingProvider {
       prefer_not_to_say: 'Non précisé',
     };
 
-    const tierLabel = tier === 'luxe'
-      ? '🖤 GÉNÉRATION LUXE — vision haut de gamme, curation sans compromis'
-      : tier === 'premium'
-        ? '✦ GÉNÉRATION PREMIUM — curation approfondie, analyse poussée'
-        : null;
+    const tierLabel =
+      tier === 'luxe'
+        ? '🖤 GÉNÉRATION LUXE — vision haut de gamme, curation sans compromis'
+        : tier === 'premium'
+          ? '✦ GÉNÉRATION PREMIUM — curation approfondie, analyse poussée'
+          : null;
 
     return [
       tierLabel,
@@ -354,7 +419,9 @@ export class ClaudeStylingProvider implements StylingProvider {
       brief.colorNote && `Contrainte couleur : ${brief.colorNote}`,
       brief.styleTags?.length && `Univers style demandé : ${brief.styleTags.join(', ')}`,
       brief.budget && `Budget max : ${brief.budget} €`,
-      brief.styleNotes && !brief.styleNotes.toLowerCase().includes('génération') && `Notes : ${brief.styleNotes}`,
+      brief.styleNotes &&
+        !brief.styleNotes.toLowerCase().includes('génération') &&
+        `Notes : ${brief.styleNotes}`,
     ]
       .filter(Boolean)
       .join('\n');
