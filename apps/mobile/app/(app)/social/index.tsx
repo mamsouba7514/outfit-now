@@ -1,8 +1,8 @@
 import { colors, typography, spacing } from '@outfit-now/design-tokens';
-import type { Post } from '@outfit-now/shared-types';
+import type { Post, Outfit, Comment } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,9 @@ import {
   Platform,
 } from 'react-native';
 
+import { useAppTheme } from '../../../contexts/ThemeContext';
 import { useAuthStore } from '../../../hooks/useAuth';
+import { getOutfits } from '../../../lib/briefs';
 import {
   getFeed,
   getExplore,
@@ -30,9 +32,6 @@ import {
   deletePost,
   createPost,
 } from '../../../lib/social';
-import { getOutfits } from '../../../lib/briefs';
-import type { Outfit } from '@outfit-now/shared-types';
-import type { Comment } from '@outfit-now/shared-types';
 
 type Tab = 'feed' | 'explore';
 
@@ -53,11 +52,12 @@ function PostCard({
   onDelete: (postId: string) => void;
   onAuthorPress: (userId: string) => void;
 }) {
+  const theme = useAppTheme();
   const isOwner = post.author.id === currentUserId;
   const timeAgo = getTimeAgo(post.createdAt);
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { borderBottomColor: theme.colors.surface }]}>
       {/* Author row */}
       <View style={styles.cardHeader}>
         <TouchableOpacity
@@ -65,32 +65,44 @@ function PostCard({
           onPress={() => onAuthorPress(post.author.id)}
           activeOpacity={0.8}
         >
-          <View style={styles.avatar}>
+          <View
+            style={[
+              styles.avatar,
+              { backgroundColor: theme.colors.surfaceAlt, borderColor: theme.colors.border },
+            ]}
+          >
             {post.author.avatarUrl ? (
-              <Image source={{ uri: post.author.avatarUrl }} style={styles.avatarImage} contentFit="cover" />
+              <Image
+                source={{ uri: post.author.avatarUrl }}
+                style={styles.avatarImage}
+                contentFit="cover"
+              />
             ) : (
-              <Text style={styles.avatarInitials}>
-                {post.author.firstName[0]}{post.author.lastName[0]}
+              <Text style={[styles.avatarInitials, { color: theme.colors.textMuted }]}>
+                {post.author.firstName[0]}
+                {post.author.lastName[0]}
               </Text>
             )}
           </View>
           <View>
-            <Text style={styles.authorName}>
+            <Text style={[styles.authorName, { color: theme.colors.textSecondary }]}>
               {post.author.firstName} {post.author.lastName}
             </Text>
-            <Text style={styles.postTime}>{timeAgo}</Text>
+            <Text style={[styles.postTime, { color: theme.colors.border }]}>{timeAgo}</Text>
           </View>
         </TouchableOpacity>
 
         {isOwner && (
           <TouchableOpacity
-            onPress={() => Alert.alert('Supprimer', 'Supprimer ce post ?', [
-              { text: 'Annuler', style: 'cancel' },
-              { text: 'Supprimer', style: 'destructive', onPress: () => onDelete(post.id) },
-            ])}
+            onPress={() =>
+              Alert.alert('Supprimer', 'Supprimer ce post ?', [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Supprimer', style: 'destructive', onPress: () => onDelete(post.id) },
+              ])
+            }
             style={styles.moreBtn}
           >
-            <Text style={styles.moreBtnText}>···</Text>
+            <Text style={[styles.moreBtnText, { color: theme.colors.textMuted }]}>···</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -103,12 +115,22 @@ function PostCard({
           contentContainerStyle={styles.itemsStrip}
         >
           {post.outfit.items.map((item) => (
-            <View key={item.id} style={styles.itemThumb}>
+            <View
+              key={item.id}
+              style={[
+                styles.itemThumb,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceAlt },
+              ]}
+            >
               {item.imageUrl ? (
-                <Image source={{ uri: item.imageUrl }} style={styles.itemThumbImage} contentFit="cover" />
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.itemThumbImage}
+                  contentFit="cover"
+                />
               ) : (
                 <View style={styles.itemThumbPlaceholder}>
-                  <Text style={styles.itemThumbIcon}>◈</Text>
+                  <Text style={[styles.itemThumbIcon, { color: theme.colors.border }]}>◈</Text>
                 </View>
               )}
             </View>
@@ -118,22 +140,20 @@ function PostCard({
 
       {/* Outfit justification */}
       {post.outfit?.justification ? (
-        <Text style={styles.outfitJustif} numberOfLines={2}>
+        <Text style={[styles.outfitJustif, { color: theme.colors.textMuted }]} numberOfLines={2}>
           {post.outfit.justification}
         </Text>
       ) : null}
 
       {/* Caption */}
       {post.caption ? (
-        <Text style={styles.caption}>{post.caption}</Text>
+        <Text style={[styles.caption, { color: theme.colors.textSecondary }]}>{post.caption}</Text>
       ) : null}
 
       {/* Score badge */}
       {post.outfit && (
         <View style={styles.scoreBadge}>
-          <Text style={styles.scoreBadgeText}>
-            SCORE {Math.round(post.outfit.score * 100)}%
-          </Text>
+          <Text style={styles.scoreBadgeText}>SCORE {Math.round(post.outfit.score * 100)}%</Text>
         </View>
       )}
 
@@ -144,10 +164,22 @@ function PostCard({
           onPress={() => onLike(post.id)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.actionIcon, post.isLiked && styles.actionIconLiked]}>
+          <Text
+            style={[
+              styles.actionIcon,
+              { color: theme.colors.textMuted },
+              post.isLiked && styles.actionIconLiked,
+            ]}
+          >
             {post.isLiked ? '♥' : '♡'}
           </Text>
-          <Text style={[styles.actionCount, post.isLiked && styles.actionCountLiked]}>
+          <Text
+            style={[
+              styles.actionCount,
+              { color: theme.colors.textMuted },
+              post.isLiked && styles.actionCountLiked,
+            ]}
+          >
             {post.likesCount}
           </Text>
         </TouchableOpacity>
@@ -157,8 +189,10 @@ function PostCard({
           onPress={() => onComment(post)}
           activeOpacity={0.7}
         >
-          <Text style={styles.actionIcon}>◎</Text>
-          <Text style={styles.actionCount}>{post.commentsCount}</Text>
+          <Text style={[styles.actionIcon, { color: theme.colors.textMuted }]}>◎</Text>
+          <Text style={[styles.actionCount, { color: theme.colors.textMuted }]}>
+            {post.commentsCount}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -169,7 +203,7 @@ function PostCard({
 
 function CommentSheet({
   post,
-  currentUserId,
+  currentUserId: _currentUserId,
   visible,
   onClose,
 }: {
@@ -178,6 +212,7 @@ function CommentSheet({
   visible: boolean;
   onClose: () => void;
 }) {
+  const theme = useAppTheme();
   const [comments, setComments] = useState<Comment[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -201,7 +236,7 @@ function CommentSheet({
       setComments((prev) => [...prev, comment]);
       setInput('');
     } catch {
-      Alert.alert('Erreur', 'Impossible d\'envoyer le commentaire.');
+      Alert.alert('Erreur', "Impossible d'envoyer le commentaire.");
     } finally {
       setSending(false);
     }
@@ -216,12 +251,17 @@ function CommentSheet({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={styles.sheetBackdrop} onPress={onClose} activeOpacity={1} />
-        <View style={styles.sheet}>
-          <View style={styles.sheetHandle} />
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>COMMENTAIRES</Text>
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: theme.colors.background, borderTopColor: theme.colors.surfaceAlt },
+          ]}
+        >
+          <View style={[styles.sheetHandle, { backgroundColor: theme.colors.surfaceAlt }]} />
+          <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.surface }]}>
+            <Text style={[styles.sheetTitle, { color: theme.colors.textMuted }]}>COMMENTAIRES</Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.sheetClose}>✕</Text>
+              <Text style={[styles.sheetClose, { color: theme.colors.textMuted }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -233,34 +273,43 @@ function CommentSheet({
               keyExtractor={(c) => c.id}
               style={styles.commentList}
               ListEmptyComponent={
-                <Text style={styles.noComments}>Sois le premier à commenter.</Text>
+                <Text style={[styles.noComments, { color: theme.colors.border }]}>
+                  Sois le premier à commenter.
+                </Text>
               }
               renderItem={({ item: c }) => (
-                <View style={styles.commentRow}>
-                  <View style={styles.commentAvatar}>
-                    <Text style={styles.commentAvatarText}>
-                      {c.author.firstName[0]}{c.author.lastName[0]}
+                <View style={[styles.commentRow, { borderBottomColor: theme.colors.surface }]}>
+                  <View
+                    style={[styles.commentAvatar, { backgroundColor: theme.colors.surfaceAlt }]}
+                  >
+                    <Text style={[styles.commentAvatarText, { color: theme.colors.textMuted }]}>
+                      {c.author.firstName[0]}
+                      {c.author.lastName[0]}
                     </Text>
                   </View>
                   <View style={styles.commentBubble}>
-                    <Text style={styles.commentAuthor}>
+                    <Text style={[styles.commentAuthor, { color: theme.colors.textSecondary }]}>
                       {c.author.firstName} {c.author.lastName}
                     </Text>
-                    <Text style={styles.commentContent}>{c.content}</Text>
-                    <Text style={styles.commentTime}>{getTimeAgo(c.createdAt)}</Text>
+                    <Text style={[styles.commentContent, { color: theme.colors.textMuted }]}>
+                      {c.content}
+                    </Text>
+                    <Text style={[styles.commentTime, { color: theme.colors.border }]}>
+                      {getTimeAgo(c.createdAt)}
+                    </Text>
                   </View>
                 </View>
               )}
             />
           )}
 
-          <View style={styles.commentInputRow}>
+          <View style={[styles.commentInputRow, { borderTopColor: theme.colors.surface }]}>
             <TextInput
-              style={styles.commentInput}
+              style={[styles.commentInput, { color: theme.colors.textPrimary }]}
               value={input}
               onChangeText={setInput}
               placeholder="Ajouter un commentaire…"
-              placeholderTextColor={colors.neutral[700]}
+              placeholderTextColor={theme.colors.textMuted}
               multiline
               maxLength={500}
               keyboardAppearance="dark"
@@ -270,9 +319,11 @@ function CommentSheet({
               onPress={handleSend}
               disabled={!input.trim() || sending}
             >
-              {sending
-                ? <ActivityIndicator color={colors.neutral[950]} size="small" />
-                : <Text style={styles.sendBtnText}>↑</Text>}
+              {sending ? (
+                <ActivityIndicator color={theme.colors.background} size="small" />
+              ) : (
+                <Text style={[styles.sendBtnText, { color: theme.colors.background }]}>↑</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -292,6 +343,7 @@ function ShareModal({
   onClose: () => void;
   onPosted: () => void;
 }) {
+  const theme = useAppTheme();
   const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
@@ -334,47 +386,90 @@ function ShareModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableOpacity style={styles.sheetBackdrop} onPress={onClose} activeOpacity={1} />
-        <View style={[styles.sheet, styles.shareSheet]}>
-          <View style={styles.sheetHandle} />
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>PARTAGER UNE TENUE</Text>
+        <View
+          style={[
+            styles.sheet,
+            styles.shareSheet,
+            { backgroundColor: theme.colors.background, borderTopColor: theme.colors.surfaceAlt },
+          ]}
+        >
+          <View style={[styles.sheetHandle, { backgroundColor: theme.colors.surfaceAlt }]} />
+          <View style={[styles.sheetHeader, { borderBottomColor: theme.colors.surface }]}>
+            <Text style={[styles.sheetTitle, { color: theme.colors.textMuted }]}>
+              PARTAGER UNE TENUE
+            </Text>
             <TouchableOpacity onPress={onClose}>
-              <Text style={styles.sheetClose}>✕</Text>
+              <Text style={[styles.sheetClose, { color: theme.colors.textMuted }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.shareScroll}>
-            <Text style={styles.shareLabel}>CHOISIR UNE TENUE</Text>
+            <Text style={[styles.shareLabel, { color: theme.colors.textMuted }]}>
+              CHOISIR UNE TENUE
+            </Text>
             {loading ? (
-              <ActivityIndicator color={colors.primary[400]} style={{ marginVertical: spacing[6] }} />
+              <ActivityIndicator
+                color={colors.primary[400]}
+                style={{ marginVertical: spacing[6] }}
+              />
             ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.outfitSelector}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.outfitSelector}
+              >
                 {outfits.map((outfit) => (
                   <TouchableOpacity
                     key={outfit.id}
-                    style={[styles.outfitThumb, selected === outfit.id && styles.outfitThumbSelected]}
+                    style={[
+                      styles.outfitThumb,
+                      {
+                        borderColor: theme.colors.surfaceAlt,
+                        backgroundColor: theme.colors.surface,
+                      },
+                      selected === outfit.id && styles.outfitThumbSelected,
+                    ]}
                     onPress={() => setSelected(outfit.id)}
                     activeOpacity={0.8}
                   >
                     <View style={styles.outfitThumbItems}>
                       {outfit.items.slice(0, 3).map((item) => (
-                        <View key={item.id} style={styles.outfitThumbItem}>
+                        <View
+                          key={item.id}
+                          style={[
+                            styles.outfitThumbItem,
+                            { backgroundColor: theme.colors.surfaceAlt },
+                          ]}
+                        >
                           {item.imageUrl ? (
-                            <Image source={{ uri: item.imageUrl }} style={styles.outfitThumbItemImg} contentFit="cover" />
+                            <Image
+                              source={{ uri: item.imageUrl }}
+                              style={styles.outfitThumbItemImg}
+                              contentFit="cover"
+                            />
                           ) : (
-                            <View style={styles.outfitThumbItemPlaceholder}>
-                              <Text style={{ color: colors.neutral[700], fontSize: 10 }}>◈</Text>
+                            <View
+                              style={[
+                                styles.outfitThumbItemPlaceholder,
+                                { backgroundColor: theme.colors.surfaceAlt },
+                              ]}
+                            >
+                              <Text style={{ color: theme.colors.border, fontSize: 10 }}>◈</Text>
                             </View>
                           )}
                         </View>
                       ))}
                     </View>
-                    <Text style={styles.outfitThumbScore}>
+                    <Text style={[styles.outfitThumbScore, { color: theme.colors.textMuted }]}>
                       {Math.round(outfit.score * 100)}%
                     </Text>
                     {selected === outfit.id && (
                       <View style={styles.outfitThumbCheck}>
-                        <Text style={styles.outfitThumbCheckText}>✓</Text>
+                        <Text
+                          style={[styles.outfitThumbCheckText, { color: theme.colors.background }]}
+                        >
+                          ✓
+                        </Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -382,20 +477,23 @@ function ShareModal({
               </ScrollView>
             )}
 
-            <Text style={[styles.shareLabel, { marginTop: spacing[5] }]}>
-              CAPTION <Text style={styles.optional}>(optionnel)</Text>
+            <Text
+              style={[styles.shareLabel, { marginTop: spacing[5], color: theme.colors.textMuted }]}
+            >
+              CAPTION{' '}
+              <Text style={[styles.optional, { color: theme.colors.surfaceAlt }]}>(optionnel)</Text>
             </Text>
             <TextInput
-              style={styles.captionInput}
+              style={[styles.captionInput, { color: theme.colors.textPrimary }]}
               value={caption}
               onChangeText={setCaption}
               placeholder="Décris cette tenue…"
-              placeholderTextColor={colors.neutral[700]}
+              placeholderTextColor={theme.colors.textMuted}
               multiline
               maxLength={500}
               keyboardAppearance="dark"
             />
-            <View style={styles.captionLine} />
+            <View style={[styles.captionLine, { backgroundColor: theme.colors.surfaceAlt }]} />
           </ScrollView>
 
           <TouchableOpacity
@@ -403,9 +501,11 @@ function ShareModal({
             onPress={handlePost}
             disabled={!selected || posting}
           >
-            {posting
-              ? <ActivityIndicator color={colors.neutral[950]} />
-              : <Text style={styles.postBtnText}>PUBLIER</Text>}
+            {posting ? (
+              <ActivityIndicator color={theme.colors.background} />
+            ) : (
+              <Text style={[styles.postBtnText, { color: theme.colors.background }]}>PUBLIER</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -428,6 +528,7 @@ function getTimeAgo(dateStr: string): string {
 }
 
 export default function SocialScreen() {
+  const theme = useAppTheme();
   const { user } = useAuthStore();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('feed');
@@ -446,31 +547,32 @@ export default function SocialScreen() {
   const hasMore = tab === 'feed' ? feedHasMore : exploreHasMore;
   const cursor = tab === 'feed' ? feedCursor : exploreCursor;
 
-  const load = useCallback(async (reset = false) => {
-    const currentCursor = reset ? undefined : (cursor ?? undefined);
-    if (!reset && !hasMore) return;
-    try {
-      const res = tab === 'feed'
-        ? await getFeed(currentCursor)
-        : await getExplore(currentCursor);
+  const load = useCallback(
+    async (reset = false) => {
+      const currentCursor = reset ? undefined : (cursor ?? undefined);
+      if (!reset && !hasMore) return;
+      try {
+        const res = tab === 'feed' ? await getFeed(currentCursor) : await getExplore(currentCursor);
 
-      if (tab === 'feed') {
-        setFeedPosts((prev) => reset ? res.data : [...prev, ...res.data]);
-        setFeedHasMore(res.hasMore);
-        setFeedCursor(res.nextCursor);
-      } else {
-        setExplorePosts((prev) => reset ? res.data : [...prev, ...res.data]);
-        setExploreHasMore(res.hasMore);
-        setExploreCursor(res.nextCursor);
+        if (tab === 'feed') {
+          setFeedPosts((prev) => (reset ? res.data : [...prev, ...res.data]));
+          setFeedHasMore(res.hasMore);
+          setFeedCursor(res.nextCursor);
+        } else {
+          setExplorePosts((prev) => (reset ? res.data : [...prev, ...res.data]));
+          setExploreHasMore(res.hasMore);
+          setExploreCursor(res.nextCursor);
+        }
+      } catch {
+        // silent
       }
-    } catch {
-      // silent
-    }
-  }, [tab, cursor, hasMore]);
+    },
+    [tab, cursor, hasMore],
+  );
 
   useEffect(() => {
     setLoading(true);
-    load(true).finally(() => setLoading(false));
+    void load(true).finally(() => setLoading(false));
   }, [tab]);
 
   function handleLike(postId: string) {
@@ -500,7 +602,11 @@ export default function SocialScreen() {
         const revert = (prev: Post[]) =>
           prev.map((p) =>
             p.id === postId
-              ? { ...p, isLiked: !p.isLiked, likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1 }
+              ? {
+                  ...p,
+                  isLiked: !p.isLiked,
+                  likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1,
+                }
               : p,
           );
         if (tab === 'feed') setFeedPosts(revert);
@@ -517,37 +623,40 @@ export default function SocialScreen() {
     });
   }
 
-  function handleCommentCountUpdate(postId: string) {
-    const updater = (prev: Post[]) =>
-      prev.map((p) => p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p);
-    setFeedPosts(updater);
-    setExplorePosts(updater);
-  }
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.colors.statusBar as 'dark-content' | 'light-content'} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.colors.surface }]}>
         <View>
           <Text style={styles.eyebrow}>COMMUNAUTÉ</Text>
-          <Text style={styles.title}>STYLE FEED</Text>
+          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>STYLE FEED</Text>
         </View>
-        <TouchableOpacity style={styles.shareBtn} onPress={() => setShowShare(true)} activeOpacity={0.85}>
-          <Text style={styles.shareBtnText}>+ PARTAGER</Text>
+        <TouchableOpacity
+          style={styles.shareBtn}
+          onPress={() => setShowShare(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.shareBtnText, { color: theme.colors.background }]}>+ PARTAGER</Text>
         </TouchableOpacity>
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { borderBottomColor: theme.colors.surface }]}>
         {(['feed', 'explore'] as Tab[]).map((t) => (
           <TouchableOpacity
             key={t}
             style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
             onPress={() => setTab(t)}
           >
-            <Text style={[styles.tabLabel, tab === t && styles.tabLabelActive]}>
+            <Text
+              style={[
+                styles.tabLabel,
+                { color: theme.colors.textMuted },
+                tab === t && styles.tabLabelActive,
+              ]}
+            >
               {t === 'feed' ? 'MON FEED' : 'EXPLORER'}
             </Text>
           </TouchableOpacity>
@@ -588,11 +697,11 @@ export default function SocialScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyAccent}>—</Text>
-              <Text style={styles.emptyTitle}>
-                {tab === 'feed' ? 'Ton feed est vide' : 'Aucun post pour l\'instant'}
+              <Text style={[styles.emptyAccent, { color: theme.colors.surfaceAlt }]}>—</Text>
+              <Text style={[styles.emptyTitle, { color: theme.colors.textMuted }]}>
+                {tab === 'feed' ? 'Ton feed est vide' : "Aucun post pour l'instant"}
               </Text>
-              <Text style={styles.emptySub}>
+              <Text style={[styles.emptySub, { color: theme.colors.border }]}>
                 {tab === 'feed'
                   ? 'Suis des stylistes ou partage ta première tenue.'
                   : 'Sois le premier à partager une tenue !'}
@@ -601,7 +710,10 @@ export default function SocialScreen() {
           }
           ListFooterComponent={
             hasMore && posts.length > 0 ? (
-              <ActivityIndicator color={colors.primary[400]} style={{ marginVertical: spacing[6] }} />
+              <ActivityIndicator
+                color={colors.primary[400]}
+                style={{ marginVertical: spacing[6] }}
+              />
             ) : null
           }
         />
@@ -780,7 +892,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: spacing[2],
     paddingVertical: 3,
-    backgroundColor: 'rgba(36,72,216,0.08)',
+    backgroundColor: 'rgba(0,196,191,0.08)',
     borderWidth: 1,
     borderColor: colors.primary[900],
   },
@@ -962,7 +1074,7 @@ const styles = StyleSheet.create({
   },
   outfitThumbSelected: {
     borderColor: colors.primary[500],
-    backgroundColor: 'rgba(36,72,216,0.06)',
+    backgroundColor: 'rgba(0,196,191,0.06)',
   },
   outfitThumbItems: { flexDirection: 'row', gap: 3 },
   outfitThumbItem: { flex: 1, height: 60, backgroundColor: colors.neutral[800] },
