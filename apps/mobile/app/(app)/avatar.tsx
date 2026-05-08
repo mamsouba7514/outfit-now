@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing } from '@outfit-now/design-tokens';
-import * as ImagePicker from 'expo-image-picker';
+import type { DressingItem } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -16,8 +17,19 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Ellipse, Path, Rect, Circle, Defs, RadialGradient, Stop, LinearGradient } from 'react-native-svg';
+import Svg, {
+  Ellipse,
+  Path,
+  Rect,
+  Circle,
+  Defs,
+  RadialGradient,
+  Stop,
+  LinearGradient,
+} from 'react-native-svg';
 
+import { useAppTheme } from '../../contexts/ThemeContext';
+import { useAuthStore } from '../../hooks/useAuth';
 import {
   getAvatar,
   saveAvatar,
@@ -28,8 +40,6 @@ import {
   type AvatarUpdatePayload,
 } from '../../lib/avatar';
 import { getDressingItems } from '../../lib/dressing';
-import { useAuthStore } from '../../hooks/useAuth';
-import type { DressingItem } from '@outfit-now/shared-types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MANNEQUIN_HEIGHT = SCREEN_HEIGHT * 0.52;
@@ -46,53 +56,55 @@ type Step = 'silhouette' | 'style' | 'ready';
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const BODY_TYPES: { value: BodyType; label: string; desc: string }[] = [
-  { value: 'slim',     label: 'SVELTE',     desc: 'Fine et allongée' },
+  { value: 'slim', label: 'SVELTE', desc: 'Fine et allongée' },
   { value: 'athletic', label: 'ATHLÉTIQUE', desc: 'Épaules larges' },
-  { value: 'regular',  label: 'REGULAR',    desc: 'Proportions équilibrées' },
-  { value: 'curvy',    label: 'CURVY',      desc: 'Formes généreuses' },
-  { value: 'plus',     label: 'PLUS SIZE',  desc: 'Pleine et assumée' },
+  { value: 'regular', label: 'REGULAR', desc: 'Proportions équilibrées' },
+  { value: 'curvy', label: 'CURVY', desc: 'Formes généreuses' },
+  { value: 'plus', label: 'PLUS SIZE', desc: 'Pleine et assumée' },
 ];
 
 const SKIN_TONES: { value: SkinTone; label: string; hex: string }[] = [
-  { value: 'light',        label: 'Claire',    hex: '#FDDBB4' },
+  { value: 'light', label: 'Claire', hex: '#FDDBB4' },
   { value: 'medium-light', label: 'Lumineuse', hex: '#E8B98A' },
-  { value: 'medium',       label: 'Dorée',     hex: '#C68642' },
-  { value: 'medium-dark',  label: 'Ambrée',    hex: '#8D5524' },
-  { value: 'dark',         label: 'Ébène',     hex: '#3D1C02' },
+  { value: 'medium', label: 'Dorée', hex: '#C68642' },
+  { value: 'medium-dark', label: 'Ambrée', hex: '#8D5524' },
+  { value: 'dark', label: 'Ébène', hex: '#3D1C02' },
 ];
 
 const HAIR_COLORS: { value: HairColor; label: string; hex: string }[] = [
-  { value: 'black',  label: 'Noirs',  hex: '#1A1A1A' },
-  { value: 'brown',  label: 'Bruns',  hex: '#6B3A2A' },
+  { value: 'black', label: 'Noirs', hex: '#1A1A1A' },
+  { value: 'brown', label: 'Bruns', hex: '#6B3A2A' },
   { value: 'blonde', label: 'Blonds', hex: '#C9A84C' },
-  { value: 'red',    label: 'Roux',   hex: '#A0522D' },
-  { value: 'grey',   label: 'Gris',   hex: '#8C8C8C' },
-  { value: 'white',  label: 'Blancs', hex: '#E8E8E8' },
-  { value: 'other',  label: 'Autre',  hex: '#555' },
+  { value: 'red', label: 'Roux', hex: '#A0522D' },
+  { value: 'grey', label: 'Gris', hex: '#8C8C8C' },
+  { value: 'white', label: 'Blancs', hex: '#E8E8E8' },
+  { value: 'other', label: 'Autre', hex: '#555' },
 ];
 
 const HAIR_LENGTHS: { value: HairLength; label: string }[] = [
   { value: 'shaved', label: 'RASÉ' },
-  { value: 'short',  label: 'COURT' },
+  { value: 'short', label: 'COURT' },
   { value: 'medium', label: 'MI-LONG' },
-  { value: 'long',   label: 'LONG' },
+  { value: 'long', label: 'LONG' },
 ];
 
-const HEIGHTS = [150, 155, 158, 160, 163, 165, 168, 170, 173, 175, 178, 180, 183, 185, 188, 190, 195];
+const HEIGHTS = [
+  150, 155, 158, 160, 163, 165, 168, 170, 173, 175, 178, 180, 183, 185, 188, 190, 195,
+];
 
 // ─── Category → body zone color mapping ──────────────────────────────────────
 
 const CATEGORY_COLORS: Record<string, string> = {
-  tops:       'rgba(100,120,200,0.55)',
-  bottoms:    'rgba(60,140,100,0.55)',
-  dresses:    'rgba(180,80,140,0.55)',
-  outerwear:  'rgba(140,100,60,0.55)',
-  shoes:      'rgba(80,80,80,0.55)',
-  accessories:'rgba(196,154,46,0.65)',
-  bags:       'rgba(180,120,80,0.55)',
-  swimwear:   'rgba(40,160,180,0.55)',
+  tops: 'rgba(100,120,200,0.55)',
+  bottoms: 'rgba(60,140,100,0.55)',
+  dresses: 'rgba(180,80,140,0.55)',
+  outerwear: 'rgba(140,100,60,0.55)',
+  shoes: 'rgba(80,80,80,0.55)',
+  accessories: 'rgba(196,154,46,0.65)',
+  bags: 'rgba(180,120,80,0.55)',
+  swimwear: 'rgba(40,160,180,0.55)',
   activewear: 'rgba(60,180,80,0.55)',
-  underwear:  'rgba(200,140,140,0.45)',
+  underwear: 'rgba(200,140,140,0.45)',
 };
 
 // ─── Fashion Mannequin SVG ────────────────────────────────────────────────────
@@ -103,7 +115,7 @@ function FashionMannequin({
   hairColor,
   hairLength,
   wardrobeItems,
-  photoUrl,
+  photoUrl: _photoUrl,
 }: {
   bodyType: BodyType;
   skinTone: SkinTone;
@@ -117,26 +129,52 @@ function FashionMannequin({
 
   // Proportions par morphologie (viewBox 200x400)
   const cx = 100;
-  const shW = bodyType === 'slim' ? 44 : bodyType === 'athletic' ? 62 : bodyType === 'curvy' ? 58 : bodyType === 'plus' ? 68 : 52; // épaule demi-largeur
-  const waistW = bodyType === 'slim' ? 28 : bodyType === 'athletic' ? 38 : bodyType === 'curvy' ? 36 : bodyType === 'plus' ? 52 : 34;
-  const hipW = bodyType === 'curvy' ? 66 : bodyType === 'plus' ? 76 : bodyType === 'slim' ? 40 : bodyType === 'athletic' ? 52 : 56;
+  const shW =
+    bodyType === 'slim'
+      ? 44
+      : bodyType === 'athletic'
+        ? 62
+        : bodyType === 'curvy'
+          ? 58
+          : bodyType === 'plus'
+            ? 68
+            : 52; // épaule demi-largeur
+  const waistW =
+    bodyType === 'slim'
+      ? 28
+      : bodyType === 'athletic'
+        ? 38
+        : bodyType === 'curvy'
+          ? 36
+          : bodyType === 'plus'
+            ? 52
+            : 34;
+  const hipW =
+    bodyType === 'curvy'
+      ? 66
+      : bodyType === 'plus'
+        ? 76
+        : bodyType === 'slim'
+          ? 40
+          : bodyType === 'athletic'
+            ? 52
+            : 56;
   const legW = bodyType === 'plus' ? 24 : bodyType === 'curvy' ? 20 : 16;
 
   // Détection des catégories portées
   const cats = new Set(wardrobeItems.map((i) => i.category));
-  const hasTop        = cats.has('tops') || cats.has('activewear');
-  const hasBottom     = cats.has('bottoms');
-  const hasDress      = cats.has('dresses');
-  const hasOuter      = cats.has('outerwear');
-  const hasShoes      = cats.has('shoes');
-  const hasAccessory  = cats.has('accessories') || cats.has('bags');
+  const hasTop = cats.has('tops') || cats.has('activewear');
+  const hasBottom = cats.has('bottoms');
+  const hasDress = cats.has('dresses');
+  const hasOuter = cats.has('outerwear');
+  const hasShoes = cats.has('shoes');
+  const hasAccessory = cats.has('accessories') || cats.has('bags');
 
-  const topColor    = CATEGORY_COLORS['tops'];
+  const topColor = CATEGORY_COLORS['tops'];
   const bottomColor = CATEGORY_COLORS['bottoms'];
-  const dressColor  = CATEGORY_COLORS['dresses'];
-  const outerColor  = CATEGORY_COLORS['outerwear'];
-  const shoeColor   = CATEGORY_COLORS['shoes'];
-  const accColor    = CATEGORY_COLORS['accessories'];
+  const dressColor = CATEGORY_COLORS['dresses'];
+  const outerColor = CATEGORY_COLORS['outerwear'];
+  const shoeColor = CATEGORY_COLORS['shoes'];
 
   const svgH = 400;
   const svgW = 200;
@@ -265,9 +303,18 @@ function FashionMannequin({
       <Circle cx={cx - 7} cy={55.5} r={1} fill="white" opacity={0.6} />
       <Circle cx={cx + 9} cy={55.5} r={1} fill="white" opacity={0.6} />
       {/* Nez */}
-      <Path d={`M ${cx} 61 Q ${cx - 2} 66 ${cx} 67 Q ${cx + 2} 66 ${cx} 61`} fill={skin} opacity={0.5} />
+      <Path
+        d={`M ${cx} 61 Q ${cx - 2} 66 ${cx} 67 Q ${cx + 2} 66 ${cx} 61`}
+        fill={skin}
+        opacity={0.5}
+      />
       {/* Lèvres */}
-      <Path d={`M ${cx - 6} 72 Q ${cx} 76 ${cx + 6} 72`} stroke="#9B5C4A" strokeWidth={1.5} fill="none" />
+      <Path
+        d={`M ${cx - 6} 72 Q ${cx} 76 ${cx + 6} 72`}
+        stroke="#9B5C4A"
+        strokeWidth={1.5}
+        fill="none"
+      />
 
       {/* ── Ombre sur corps ── */}
       <Path
@@ -368,27 +415,28 @@ function FashionMannequin({
 
 export default function AvatarScreen() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  useAuthStore();
+  const theme = useAppTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const [step, setStep] = useState<Step>('silhouette');
-  const [loading, setLoading]                 = useState(true);
-  const [saving, setSaving]                   = useState(false);
-  const [generating, setGenerating]           = useState(false);
-  const [photoUploading, setPhotoUploading]   = useState(false);
-  const [hasChanges, setHasChanges]           = useState(false);
-  const [wardrobeItems, setWardrobeItems]     = useState<DressingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [, setHasChanges] = useState(false);
+  const [wardrobeItems, setWardrobeItems] = useState<DressingItem[]>([]);
 
   // Avatar state
-  const [bodyType,      setBodyType]      = useState<BodyType>('regular');
-  const [skinTone,      setSkinTone]      = useState<SkinTone>('medium');
-  const [hairColor,     setHairColor]     = useState<HairColor>('brown');
-  const [hairLength,    setHairLength]    = useState<HairLength>('medium');
-  const [heightCm,      setHeightCm]      = useState<number>(170);
-  const [photoUrl,      setPhotoUrl]      = useState<string | null>(null);
-  const [photoKey,      setPhotoKey]      = useState<string | null>(null);
-  const [generatedUrl,  setGeneratedUrl]  = useState<string | null>(null);
-  const [analyzing,     setAnalyzing]     = useState(false);
+  const [bodyType, setBodyType] = useState<BodyType>('regular');
+  const [skinTone, setSkinTone] = useState<SkinTone>('medium');
+  const [hairColor, setHairColor] = useState<HairColor>('brown');
+  const [hairLength, setHairLength] = useState<HairLength>('medium');
+  const [heightCm, setHeightCm] = useState<number>(170);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoKey, setPhotoKey] = useState<string | null>(null);
+  const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
 
   const savedRef = useRef<AvatarUpdatePayload>({});
@@ -400,7 +448,7 @@ export default function AvatarScreen() {
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.03, duration: 1200, useNativeDriver: true }),
           Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        ])
+        ]),
       ).start();
     } else {
       pulseAnim.setValue(1);
@@ -408,32 +456,31 @@ export default function AvatarScreen() {
   }, [step]);
 
   useEffect(() => {
-    Promise.all([
-      getAvatar(),
-      getDressingItems({ pageSize: 50 }),
-    ]).then(([avatarData, dressingData]) => {
-      if (avatarData) {
-        setBodyType(avatarData.bodyType);
-        setSkinTone(avatarData.skinTone);
-        setHairColor(avatarData.hairColor);
-        setHairLength(avatarData.hairLength);
-        setHeightCm(avatarData.heightCm ?? 170);
-        setPhotoUrl(avatarData.photoUrl);
-        setPhotoKey(avatarData.photoKey);
-        if (avatarData.generatedUrl) setGeneratedUrl(avatarData.generatedUrl);
-        savedRef.current = {
-          bodyType: avatarData.bodyType,
-          skinTone: avatarData.skinTone,
-          hairColor: avatarData.hairColor,
-          hairLength: avatarData.hairLength,
-          heightCm: avatarData.heightCm ?? 170,
-        };
-        // Si déjà configuré → aller directement à "ready"
-        setStep('ready');
-      }
-      setWardrobeItems(dressingData.data ?? []);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    Promise.all([getAvatar(), getDressingItems({ pageSize: 50 })])
+      .then(([avatarData, dressingData]) => {
+        if (avatarData) {
+          setBodyType(avatarData.bodyType);
+          setSkinTone(avatarData.skinTone);
+          setHairColor(avatarData.hairColor);
+          setHairLength(avatarData.hairLength);
+          setHeightCm(avatarData.heightCm ?? 170);
+          setPhotoUrl(avatarData.photoUrl);
+          setPhotoKey(avatarData.photoKey);
+          if (avatarData.generatedUrl) setGeneratedUrl(avatarData.generatedUrl);
+          savedRef.current = {
+            bodyType: avatarData.bodyType,
+            skinTone: avatarData.skinTone,
+            hairColor: avatarData.hairColor,
+            hairLength: avatarData.hairLength,
+            heightCm: avatarData.heightCm ?? 170,
+          };
+          // Si déjà configuré → aller directement à "ready"
+          setStep('ready');
+        }
+        setWardrobeItems(dressingData.data ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const markChanged = () => setHasChanges(true);
@@ -449,7 +496,7 @@ export default function AvatarScreen() {
         Alert.alert(
           'Clé API manquante',
           'Ajoute ta clé REPLICATE_API_TOKEN dans apps/api/.env pour activer la génération IA.\n\nObtiens-la gratuitement sur replicate.com',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       } else {
         Alert.alert('Erreur de génération', msg);
@@ -462,7 +509,14 @@ export default function AvatarScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await saveAvatar({ bodyType, skinTone, hairColor, hairLength, heightCm, ...(photoKey ? { photoKey } : {}) });
+      await saveAvatar({
+        bodyType,
+        skinTone,
+        hairColor,
+        hairLength,
+        heightCm,
+        ...(photoKey ? { photoKey } : {}),
+      });
       savedRef.current = { bodyType, skinTone, hairColor, hairLength, heightCm };
       setHasChanges(false);
       setStep('ready');
@@ -492,7 +546,11 @@ export default function AvatarScreen() {
       const asset = result.assets[0];
       const { uploadUrl, key } = await getAvatarPhotoUploadUrl('image/jpeg');
       const blob = await fetch(asset.uri).then((r) => r.blob());
-      await fetch(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: blob,
+      });
       setPhotoUrl(asset.uri);
       setPhotoKey(key);
       markChanged();
@@ -503,11 +561,13 @@ export default function AvatarScreen() {
       try {
         const { analysis, autoApplied } = await analyzeAvatarPhoto();
         if (autoApplied) {
-          setBodyType(analysis.bodyType as BodyType);
-          setSkinTone(analysis.skinTone as SkinTone);
-          setHairColor(analysis.hairColor as HairColor);
-          setHairLength(analysis.hairLength as HairLength);
-          setAnalysisResult(`✓ Karl a détecté ta morphologie — confiance ${Math.round(analysis.confidence * 100)}%`);
+          setBodyType(analysis.bodyType);
+          setSkinTone(analysis.skinTone);
+          setHairColor(analysis.hairColor);
+          setHairLength(analysis.hairLength);
+          setAnalysisResult(
+            `✓ Karl a détecté ta morphologie — confiance ${Math.round(analysis.confidence * 100)}%`,
+          );
         } else {
           setAnalysisResult('Photo reçue. Vérifie et ajuste les champs si besoin.');
         }
@@ -525,7 +585,16 @@ export default function AvatarScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.root,
+          {
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: theme.colors.background,
+          },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary[400]} />
       </View>
     );
@@ -535,23 +604,48 @@ export default function AvatarScreen() {
   if (step === 'ready') {
     const categoryCount = new Set(wardrobeItems.map((i) => i.category)).size;
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="chevron-back" size={22} color={colors.neutral[0]} />
+        <View
+          style={[
+            styles.header,
+            { paddingTop: insets.top + 8, borderBottomColor: theme.colors.border },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="chevron-back" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>MON MANNEQUIN</Text>
-          <TouchableOpacity onPress={() => { setStep('silhouette'); setHasChanges(false); }}>
+          <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>
+            MON MANNEQUIN
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setStep('silhouette');
+              setHasChanges(false);
+            }}
+          >
             <Text style={styles.editBtn}>MODIFIER</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
-
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* ── Mannequin principal ── */}
-          <Animated.View style={[styles.mannequinStage, { transform: [{ scale: pulseAnim }] }]}>
-
+          <Animated.View
+            style={[
+              styles.mannequinStage,
+              {
+                transform: [{ scale: pulseAnim }],
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
             {generatedUrl ? (
               /* ── VUE PHOTO IA ── */
               <>
@@ -581,10 +675,11 @@ export default function AvatarScreen() {
                   disabled={generating}
                   activeOpacity={0.8}
                 >
-                  {generating
-                    ? <ActivityIndicator size="small" color={colors.neutral[0]} />
-                    : <Ionicons name="refresh" size={16} color={colors.neutral[0]} />
-                  }
+                  {generating ? (
+                    <ActivityIndicator size="small" color={theme.colors.textPrimary} />
+                  ) : (
+                    <Ionicons name="refresh" size={16} color={theme.colors.textPrimary} />
+                  )}
                 </TouchableOpacity>
               </>
             ) : (
@@ -596,7 +691,9 @@ export default function AvatarScreen() {
                 {photoUrl && (
                   <View style={styles.selfieFrame}>
                     <Image source={{ uri: photoUrl }} style={styles.selfieImg} contentFit="cover" />
-                    <View style={styles.selfieBadge}><Text style={styles.selfieBadgeText}>SELFIE</Text></View>
+                    <View style={styles.selfieBadge}>
+                      <Text style={styles.selfieBadgeText}>SELFIE</Text>
+                    </View>
                   </View>
                 )}
                 <FashionMannequin
@@ -622,13 +719,15 @@ export default function AvatarScreen() {
                 >
                   {generating ? (
                     <>
-                      <ActivityIndicator size="small" color={colors.neutral[950]} />
+                      <ActivityIndicator size="small" color={theme.colors.textPrimary} />
                       <Text style={styles.generateOverlayBtnText}>GÉNÉRATION EN COURS…</Text>
                     </>
                   ) : (
                     <>
-                      <Ionicons name="sparkles" size={14} color={colors.neutral[950]} />
-                      <Text style={styles.generateOverlayBtnText}>GÉNÉRER MON VRAI MANNEQUIN IA</Text>
+                      <Ionicons name="sparkles" size={14} color={theme.colors.textPrimary} />
+                      <Text style={styles.generateOverlayBtnText}>
+                        GÉNÉRER MON VRAI MANNEQUIN IA
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -637,7 +736,12 @@ export default function AvatarScreen() {
           </Animated.View>
 
           {/* Stats dressing */}
-          <View style={styles.statsRow}>
+          <View
+            style={[
+              styles.statsRow,
+              { borderColor: theme.colors.border, backgroundColor: theme.colors.surface },
+            ]}
+          >
             <View style={styles.statCard}>
               <Text style={styles.statNum}>{wardrobeItems.length}</Text>
               <Text style={styles.statLabel}>PIÈCES</Text>
@@ -661,7 +765,12 @@ export default function AvatarScreen() {
               <View style={styles.legendGrid}>
                 {Array.from(new Set(wardrobeItems.map((i) => i.category))).map((cat) => (
                   <View key={cat} style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLORS[cat] ?? '#888' }]} />
+                    <View
+                      style={[
+                        styles.legendDot,
+                        { backgroundColor: CATEGORY_COLORS[cat] ?? '#888' },
+                      ]}
+                    />
                     <Text style={styles.legendText}>{cat.toUpperCase()}</Text>
                   </View>
                 ))}
@@ -670,16 +779,18 @@ export default function AvatarScreen() {
           )}
 
           {wardrobeItems.length === 0 && (
-            <View style={styles.emptyDressingCard}>
-              <Ionicons name="shirt-outline" size={24} color={colors.neutral[600]} />
-              <Text style={styles.emptyDressingText}>
+            <View style={[styles.emptyDressingCard, { borderColor: theme.colors.border }]}>
+              <Ionicons name="shirt-outline" size={24} color={theme.colors.textMuted} />
+              <Text style={[styles.emptyDressingText, { color: theme.colors.textMuted }]}>
                 Ajoute des vêtements à ton dressing pour les voir sur ton mannequin.
               </Text>
               <TouchableOpacity
-                style={styles.emptyDressingBtn}
+                style={[styles.emptyDressingBtn, { borderColor: theme.colors.border }]}
                 onPress={() => router.push('/(app)/dressing' as never)}
               >
-                <Text style={styles.emptyDressingBtnText}>OUVRIR LE DRESSING →</Text>
+                <Text style={[styles.emptyDressingBtnText, { color: theme.colors.textSecondary }]}>
+                  OUVRIR LE DRESSING →
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -688,30 +799,41 @@ export default function AvatarScreen() {
           <View style={styles.tryonCard}>
             <View style={styles.tryonCardTop}>
               <Ionicons name="sparkles" size={18} color={colors.primary[400]} />
-              <Text style={styles.tryonCardTitle}>ESSAYAGE VIRTUEL IA</Text>
+              <Text style={[styles.tryonCardTitle, { color: theme.colors.textPrimary }]}>
+                ESSAYAGE VIRTUEL IA
+              </Text>
               <View style={styles.comingSoonBadge}>
                 <Text style={styles.comingSoonText}>BIENTÔT</Text>
               </View>
             </View>
             <Text style={styles.tryonCardDesc}>
-              Génère des tenues complètes portées par ton mannequin personnel grâce à l'IA. Disponible avec l'abonnement Premium.
+              Génère des tenues complètes portées par ton mannequin personnel grâce à l'IA.
+              Disponible avec l'abonnement Premium.
             </Text>
           </View>
 
           {/* Photo selfie button */}
-          <TouchableOpacity style={styles.photoSelfieBtn} onPress={handlePickPhoto} disabled={photoUploading} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.photoSelfieBtn, { borderColor: theme.colors.border }]}
+            onPress={handlePickPhoto}
+            disabled={photoUploading}
+            activeOpacity={0.8}
+          >
             {photoUploading ? (
               <ActivityIndicator size="small" color={colors.primary[400]} />
             ) : (
               <>
-                <Ionicons name={photoUrl ? 'camera' : 'camera-outline'} size={16} color={colors.primary[400]} />
+                <Ionicons
+                  name={photoUrl ? 'camera' : 'camera-outline'}
+                  size={16}
+                  color={colors.primary[400]}
+                />
                 <Text style={styles.photoSelfieBtnText}>
                   {photoUrl ? 'CHANGER MON SELFIE' : 'AJOUTER UN SELFIE'}
                 </Text>
               </>
             )}
           </TouchableOpacity>
-
         </ScrollView>
       </View>
     );
@@ -721,13 +843,18 @@ export default function AvatarScreen() {
 
   const steps: { key: Step; label: string }[] = [
     { key: 'silhouette', label: 'SILHOUETTE' },
-    { key: 'style',      label: 'STYLE' },
+    { key: 'style', label: 'STYLE' },
   ];
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, borderBottomColor: theme.colors.border },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => {
             if (step === 'silhouette') router.back();
@@ -735,22 +862,30 @@ export default function AvatarScreen() {
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.neutral[0]} />
+          <Ionicons name="chevron-back" size={22} color={theme.colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>TON MANNEQUIN</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.textPrimary }]}>TON MANNEQUIN</Text>
         <View style={{ width: 28 }} />
       </View>
 
       {/* Progress */}
-      <View style={styles.progressRow}>
-        {steps.map((s, i) => (
-          <TouchableOpacity
-            key={s.key}
-            style={styles.progressStep}
-            onPress={() => setStep(s.key)}
-          >
-            <View style={[styles.progressDot, step === s.key && styles.progressDotActive]} />
-            <Text style={[styles.progressLabel, step === s.key && styles.progressLabelActive]}>
+      <View style={[styles.progressRow, { borderBottomColor: theme.colors.border }]}>
+        {steps.map((s, _i) => (
+          <TouchableOpacity key={s.key} style={styles.progressStep} onPress={() => setStep(s.key)}>
+            <View
+              style={[
+                styles.progressDot,
+                { backgroundColor: theme.colors.textMuted },
+                step === s.key && styles.progressDotActive,
+              ]}
+            />
+            <Text
+              style={[
+                styles.progressLabel,
+                { color: theme.colors.textMuted },
+                step === s.key && styles.progressLabelActive,
+              ]}
+            >
               {s.label}
             </Text>
           </TouchableOpacity>
@@ -762,7 +897,12 @@ export default function AvatarScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Aperçu mannequin (compact, en haut) */}
-        <View style={styles.previewCard}>
+        <View
+          style={[
+            styles.previewCard,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+          ]}
+        >
           <View style={styles.heightBadge}>
             <Text style={styles.heightBadgeText}>{heightCm} cm</Text>
           </View>
@@ -780,20 +920,37 @@ export default function AvatarScreen() {
         {step === 'silhouette' && (
           <>
             <Text style={styles.sectionEye}>ÉTAPE 1 — SILHOUETTE</Text>
-            <Text style={styles.sectionTitle}>MORPHOLOGIE</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              MORPHOLOGIE
+            </Text>
             <View style={styles.bodyTypeGrid}>
               {BODY_TYPES.map((bt) => (
                 <TouchableOpacity
                   key={bt.value}
-                  style={[styles.bodyTypeCard, bodyType === bt.value && styles.bodyTypeCardActive]}
-                  onPress={() => { setBodyType(bt.value); markChanged(); }}
+                  style={[
+                    styles.bodyTypeCard,
+                    { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                    bodyType === bt.value && styles.bodyTypeCardActive,
+                  ]}
+                  onPress={() => {
+                    setBodyType(bt.value);
+                    markChanged();
+                  }}
                   activeOpacity={0.8}
                 >
                   <View>
-                    <Text style={[styles.bodyTypeLabel, bodyType === bt.value && styles.bodyTypeLabelActive]}>
+                    <Text
+                      style={[
+                        styles.bodyTypeLabel,
+                        { color: theme.colors.textMuted },
+                        bodyType === bt.value && styles.bodyTypeLabelActive,
+                      ]}
+                    >
                       {bt.label}
                     </Text>
-                    <Text style={styles.bodyTypeDesc}>{bt.desc}</Text>
+                    <Text style={[styles.bodyTypeDesc, { color: theme.colors.textMuted }]}>
+                      {bt.desc}
+                    </Text>
                   </View>
                   {bodyType === bt.value && (
                     <Ionicons name="checkmark" size={16} color={colors.primary[400]} />
@@ -802,21 +959,47 @@ export default function AvatarScreen() {
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>TAILLE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.heightScroll} contentContainerStyle={styles.heightScrollContent}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>TAILLE</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.heightScroll}
+              contentContainerStyle={styles.heightScrollContent}
+            >
               {HEIGHTS.map((h) => (
                 <TouchableOpacity
                   key={h}
-                  style={[styles.heightChip, heightCm === h && styles.heightChipActive]}
-                  onPress={() => { setHeightCm(h); markChanged(); }}
+                  style={[
+                    styles.heightChip,
+                    { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                    heightCm === h && styles.heightChipActive,
+                  ]}
+                  onPress={() => {
+                    setHeightCm(h);
+                    markChanged();
+                  }}
                 >
-                  <Text style={[styles.heightChipText, heightCm === h && styles.heightChipTextActive]}>{h}</Text>
+                  <Text
+                    style={[
+                      styles.heightChipText,
+                      { color: theme.colors.textMuted },
+                      heightCm === h && styles.heightChipTextActive,
+                    ]}
+                  >
+                    {h}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setStep('style')} activeOpacity={0.85}>
-              <Text style={styles.nextBtnText}>ÉTAPE SUIVANTE →</Text>
+            <TouchableOpacity
+              style={[styles.nextBtn, { borderColor: theme.colors.border }]}
+              onPress={() => setStep('style')}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.nextBtnText, { color: theme.colors.textPrimary }]}>
+                ÉTAPE SUIVANTE →
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -840,57 +1023,125 @@ export default function AvatarScreen() {
               </View>
             )}
 
-            <Text style={styles.sectionTitle}>TEINTE DE PEAU</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              TEINTE DE PEAU
+            </Text>
             <View style={styles.swatchRow}>
               {SKIN_TONES.map((s) => (
                 <TouchableOpacity
                   key={s.value}
-                  onPress={() => { setSkinTone(s.value); markChanged(); }}
+                  onPress={() => {
+                    setSkinTone(s.value);
+                    markChanged();
+                  }}
                   style={styles.swatchBtn}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.swatch, { backgroundColor: s.hex }, skinTone === s.value && styles.swatchActive]} />
-                  <Text style={[styles.swatchLabel, skinTone === s.value && styles.swatchLabelActive]}>{s.label}</Text>
+                  <View
+                    style={[
+                      styles.swatch,
+                      { backgroundColor: s.hex },
+                      skinTone === s.value && styles.swatchActive,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.swatchLabel,
+                      { color: theme.colors.textMuted },
+                      skinTone === s.value && [
+                        styles.swatchLabelActive,
+                        { color: theme.colors.textPrimary },
+                      ],
+                    ]}
+                  >
+                    {s.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>COULEUR DES CHEVEUX</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              COULEUR DES CHEVEUX
+            </Text>
             <View style={styles.swatchRow}>
               {HAIR_COLORS.map((h) => (
                 <TouchableOpacity
                   key={h.value}
-                  onPress={() => { setHairColor(h.value); markChanged(); }}
+                  onPress={() => {
+                    setHairColor(h.value);
+                    markChanged();
+                  }}
                   style={styles.swatchBtn}
                   activeOpacity={0.8}
                 >
-                  <View style={[
-                    styles.swatch,
-                    { backgroundColor: h.hex, borderColor: h.value === 'white' ? colors.neutral[600] : 'transparent' },
-                    hairColor === h.value && styles.swatchActive,
-                  ]} />
-                  <Text style={[styles.swatchLabel, hairColor === h.value && styles.swatchLabelActive]}>{h.label}</Text>
+                  <View
+                    style={[
+                      styles.swatch,
+                      {
+                        backgroundColor: h.hex,
+                        borderColor: h.value === 'white' ? theme.colors.textMuted : 'transparent',
+                      },
+                      hairColor === h.value && styles.swatchActive,
+                    ]}
+                  />
+                  <Text
+                    style={[
+                      styles.swatchLabel,
+                      { color: theme.colors.textMuted },
+                      hairColor === h.value && [
+                        styles.swatchLabelActive,
+                        { color: theme.colors.textPrimary },
+                      ],
+                    ]}
+                  >
+                    {h.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>LONGUEUR DES CHEVEUX</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              LONGUEUR DES CHEVEUX
+            </Text>
             <View style={styles.hairLengthRow}>
               {HAIR_LENGTHS.map((hl) => (
                 <TouchableOpacity
                   key={hl.value}
-                  style={[styles.hairLengthBtn, hairLength === hl.value && styles.hairLengthBtnActive]}
-                  onPress={() => { setHairLength(hl.value); markChanged(); }}
+                  style={[
+                    styles.hairLengthBtn,
+                    { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                    hairLength === hl.value && styles.hairLengthBtnActive,
+                  ]}
+                  onPress={() => {
+                    setHairLength(hl.value);
+                    markChanged();
+                  }}
                 >
-                  <Text style={[styles.hairLengthText, hairLength === hl.value && styles.hairLengthTextActive]}>
+                  <Text
+                    style={[
+                      styles.hairLengthText,
+                      { color: theme.colors.textMuted },
+                      hairLength === hl.value && styles.hairLengthTextActive,
+                    ]}
+                  >
                     {hl.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.sectionTitle}>PHOTO PERSONNELLE</Text>
-            <TouchableOpacity style={styles.photoFullBtn} onPress={handlePickPhoto} disabled={photoUploading} activeOpacity={0.8}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>
+              PHOTO PERSONNELLE
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.photoFullBtn,
+                { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+              ]}
+              onPress={handlePickPhoto}
+              disabled={photoUploading}
+              activeOpacity={0.8}
+            >
               {photoUploading ? (
                 <ActivityIndicator size="small" color={colors.primary[400]} />
               ) : photoUrl ? (
@@ -898,20 +1149,24 @@ export default function AvatarScreen() {
                   <Image source={{ uri: photoUrl }} style={styles.photoThumb} contentFit="cover" />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.photoFullBtnText}>SELFIE AJOUTÉ ✓</Text>
-                    <Text style={styles.photoHint}>Améliore la précision de l'essayage virtuel</Text>
+                    <Text style={[styles.photoHint, { color: theme.colors.textMuted }]}>
+                      Améliore la précision de l'essayage virtuel
+                    </Text>
                   </View>
                   <Ionicons name="camera" size={18} color={colors.primary[400]} />
                 </View>
               ) : (
                 <View style={styles.photoPreviewRow}>
-                  <View style={styles.photoPlaceholder}>
-                    <Ionicons name="camera-outline" size={20} color={colors.neutral[600]} />
+                  <View style={[styles.photoPlaceholder, { borderColor: theme.colors.border }]}>
+                    <Ionicons name="camera-outline" size={20} color={theme.colors.textMuted} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.photoFullBtnText}>AJOUTER UN SELFIE</Text>
-                    <Text style={styles.photoHint}>Optionnel — améliore les résultats IA</Text>
+                    <Text style={[styles.photoHint, { color: theme.colors.textMuted }]}>
+                      Optionnel — améliore les résultats IA
+                    </Text>
                   </View>
-                  <Ionicons name="add" size={18} color={colors.neutral[500]} />
+                  <Ionicons name="add" size={18} color={theme.colors.textMuted} />
                 </View>
               )}
             </TouchableOpacity>
@@ -920,7 +1175,16 @@ export default function AvatarScreen() {
       </ScrollView>
 
       {/* Bouton Générer / Sauvegarder */}
-      <View style={[styles.saveBar, { paddingBottom: insets.bottom + 8 }]}>
+      <View
+        style={[
+          styles.saveBar,
+          {
+            paddingBottom: insets.bottom + 8,
+            backgroundColor: theme.colors.background,
+            borderTopColor: theme.colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={[styles.saveBtn, saving && { opacity: 0.7 }]}
           onPress={handleSave}
@@ -928,10 +1192,10 @@ export default function AvatarScreen() {
           activeOpacity={0.85}
         >
           {saving ? (
-            <ActivityIndicator size="small" color={colors.neutral[950]} />
+            <ActivityIndicator size="small" color={theme.colors.textPrimary} />
           ) : (
             <>
-              <Ionicons name="sparkles" size={16} color={colors.neutral[950]} />
+              <Ionicons name="sparkles" size={16} color={theme.colors.textPrimary} />
               <Text style={styles.saveBtnText}>CRÉER MON MANNEQUIN</Text>
             </>
           )}
@@ -986,7 +1250,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[700],
   },
   progressDotActive: { backgroundColor: colors.primary[400] },
-  progressLabel: { fontSize: 9, color: colors.neutral[600], letterSpacing: 2, fontWeight: typography.fontWeight.bold },
+  progressLabel: {
+    fontSize: 9,
+    color: colors.neutral[600],
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.bold,
+  },
   progressLabelActive: { color: colors.primary[400] },
 
   content: { paddingHorizontal: spacing[4], paddingTop: spacing[4] },
@@ -1036,7 +1305,12 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     zIndex: 10,
   },
-  iaBadgeText: { fontSize: 8, color: colors.primary[400], letterSpacing: 1.5, fontWeight: typography.fontWeight.bold },
+  iaBadgeText: {
+    fontSize: 8,
+    color: colors.primary[400],
+    letterSpacing: 1.5,
+    fontWeight: typography.fontWeight.bold,
+  },
   regenBtn: {
     position: 'absolute',
     top: 10,
@@ -1060,7 +1334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
     marginTop: spacing[4],
     borderRadius: 9999,
-    shadowColor: '#2448D8',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -1082,7 +1356,12 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     zIndex: 10,
   },
-  heightBadgeText: { fontSize: 10, color: colors.primary[400], fontWeight: typography.fontWeight.bold, letterSpacing: 1 },
+  heightBadgeText: {
+    fontSize: 10,
+    color: colors.primary[400],
+    fontWeight: typography.fontWeight.bold,
+    letterSpacing: 1,
+  },
   morphBadge: {
     position: 'absolute',
     bottom: 10,
@@ -1092,7 +1371,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  morphBadgeText: { fontSize: 9, color: colors.neutral[400], letterSpacing: 2, fontWeight: typography.fontWeight.bold },
+  morphBadgeText: {
+    fontSize: 9,
+    color: colors.neutral[400],
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.bold,
+  },
 
   // Selfie
   selfieFrame: {
@@ -1116,7 +1400,12 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     alignItems: 'center',
   },
-  selfieBadgeText: { fontSize: 7, color: '#000', fontWeight: typography.fontWeight.black, letterSpacing: 1 },
+  selfieBadgeText: {
+    fontSize: 7,
+    color: '#000',
+    fontWeight: typography.fontWeight.black,
+    letterSpacing: 1,
+  },
 
   // Stats
   statsRow: {
@@ -1128,7 +1417,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[900],
   },
   statCard: { flex: 1, alignItems: 'center', paddingVertical: spacing[3] },
-  statNum: { fontSize: typography.fontSize['2xl'], fontWeight: typography.fontWeight.black, color: colors.primary[400] },
+  statNum: {
+    fontSize: typography.fontSize['2xl'],
+    fontWeight: typography.fontWeight.black,
+    color: colors.primary[400],
+  },
   statLabel: { fontSize: 8, color: colors.neutral[500], letterSpacing: 2, marginTop: 2 },
   statDivider: { width: 1, backgroundColor: colors.neutral[800] },
 
@@ -1137,7 +1430,12 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[4],
     marginTop: spacing[4],
   },
-  legendTitle: { fontSize: 9, color: colors.neutral[500], letterSpacing: 3, marginBottom: spacing[3] },
+  legendTitle: {
+    fontSize: 9,
+    color: colors.neutral[500],
+    letterSpacing: 3,
+    marginBottom: spacing[3],
+  },
   legendGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[3] },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 2 },
@@ -1165,7 +1463,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     paddingHorizontal: spacing[4],
   },
-  emptyDressingBtnText: { fontSize: 10, color: colors.neutral[300], letterSpacing: 1.5, fontWeight: typography.fontWeight.bold },
+  emptyDressingBtnText: {
+    fontSize: 10,
+    color: colors.neutral[300],
+    letterSpacing: 1.5,
+    fontWeight: typography.fontWeight.bold,
+  },
 
   // Try-on teaser
   tryonCard: {
@@ -1173,7 +1476,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
     borderWidth: 1,
     borderColor: `${colors.primary[400]}44`,
-    backgroundColor: 'rgba(36,72,216,0.04)',
+    backgroundColor: 'rgba(0,196,191,0.04)',
     padding: spacing[4],
     gap: spacing[2],
   },
@@ -1191,7 +1494,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  comingSoonText: { fontSize: 8, color: colors.primary[400], letterSpacing: 1.5, fontWeight: typography.fontWeight.bold },
+  comingSoonText: {
+    fontSize: 8,
+    color: colors.primary[400],
+    letterSpacing: 1.5,
+    fontWeight: typography.fontWeight.bold,
+  },
   tryonCardDesc: { fontSize: typography.fontSize.xs, color: colors.neutral[500], lineHeight: 18 },
 
   // Photo selfie button (écran ready)
@@ -1207,11 +1515,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     justifyContent: 'center',
   },
-  photoSelfieBtnText: { fontSize: 10, color: colors.primary[400], letterSpacing: 1.5, fontWeight: typography.fontWeight.bold },
+  photoSelfieBtnText: {
+    fontSize: 10,
+    color: colors.primary[400],
+    letterSpacing: 1.5,
+    fontWeight: typography.fontWeight.bold,
+  },
 
   // Content sections
   sectionEye: { fontSize: 9, color: colors.primary[400], letterSpacing: 3, marginBottom: 4 },
-  sectionTitle: { fontSize: 11, color: colors.neutral[0], letterSpacing: 3, fontWeight: typography.fontWeight.black, marginBottom: spacing[3], marginTop: spacing[4] },
+  sectionTitle: {
+    fontSize: 11,
+    color: colors.neutral[0],
+    letterSpacing: 3,
+    fontWeight: typography.fontWeight.black,
+    marginBottom: spacing[3],
+    marginTop: spacing[4],
+  },
 
   // Body type
   bodyTypeGrid: { gap: spacing[2] },
@@ -1227,8 +1547,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
   },
-  bodyTypeCardActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(36,72,216,0.08)' },
-  bodyTypeLabel: { fontSize: 11, fontWeight: typography.fontWeight.black, color: colors.neutral[500], letterSpacing: 2 },
+  bodyTypeCardActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(0,196,191,0.08)' },
+  bodyTypeLabel: {
+    fontSize: 11,
+    fontWeight: typography.fontWeight.black,
+    color: colors.neutral[500],
+    letterSpacing: 2,
+  },
   bodyTypeLabelActive: { color: colors.primary[400] },
   bodyTypeDesc: { fontSize: 11, color: colors.neutral[600], marginTop: 2 },
 
@@ -1244,7 +1569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 9999,
   },
-  heightChipActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(36,72,216,0.08)' },
+  heightChipActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(0,196,191,0.08)' },
   heightChipText: { fontSize: 11, color: colors.neutral[500], letterSpacing: 0.5 },
   heightChipTextActive: { color: colors.primary[400], fontWeight: typography.fontWeight.bold },
 
@@ -1272,8 +1597,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 9999,
   },
-  hairLengthBtnActive: { borderColor: colors.primary[400], backgroundColor: 'rgba(36,72,216,0.08)' },
-  hairLengthText: { fontSize: 9, color: colors.neutral[500], letterSpacing: 2, fontWeight: typography.fontWeight.bold },
+  hairLengthBtnActive: {
+    borderColor: colors.primary[400],
+    backgroundColor: 'rgba(0,196,191,0.08)',
+  },
+  hairLengthText: {
+    fontSize: 9,
+    color: colors.neutral[500],
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.bold,
+  },
   hairLengthTextActive: { color: colors.primary[400] },
 
   // Photo button (création)
@@ -1294,7 +1627,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoFullBtnText: { fontSize: 10, color: colors.primary[400], letterSpacing: 1.5, fontWeight: typography.fontWeight.bold },
+  photoFullBtnText: {
+    fontSize: 10,
+    color: colors.primary[400],
+    letterSpacing: 1.5,
+    fontWeight: typography.fontWeight.bold,
+  },
   photoHint: { fontSize: 10, color: colors.neutral[600], marginTop: 3 },
 
   // Next button
@@ -1306,7 +1644,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 9999,
   },
-  nextBtnText: { fontSize: 11, color: colors.neutral[0], letterSpacing: 2, fontWeight: typography.fontWeight.bold },
+  nextBtnText: {
+    fontSize: 11,
+    color: colors.neutral[0],
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.bold,
+  },
 
   // Save bar
   saveBar: {
@@ -1327,7 +1670,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing[2],
     borderRadius: 9999,
-    shadowColor: '#2448D8',
+    shadowColor: '#1e40af',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -1340,7 +1683,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   analysisBanner: {
-    backgroundColor: 'rgba(36,72,216,0.08)',
+    backgroundColor: 'rgba(0,196,191,0.08)',
     borderWidth: 1,
     borderColor: colors.primary[600],
     borderRadius: 8,
