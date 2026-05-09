@@ -1,6 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
+
+function makeTimeoutSignal(ms: number): AbortSignal | undefined {
+  try {
+    return AbortSignal.timeout(ms);
+  } catch {
+    return undefined;
+  }
+}
 const ACCESS_TOKEN_KEY = 'outfit_access_token';
 const REFRESH_TOKEN_KEY = 'outfit_refresh_token';
 
@@ -30,6 +38,7 @@ async function refreshAccessToken(): Promise<string | null> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
+    signal: makeTimeoutSignal(15_000),
   });
 
   if (!res.ok) {
@@ -44,30 +53,34 @@ async function refreshAccessToken(): Promise<string | null> {
 
 export async function apiRequest<T>(
   path: string,
-  options: RequestInit = {},
+  options: RequestInit & { noAuth?: boolean } = {},
 ): Promise<T> {
-  let token = await getAccessToken();
+  const { noAuth, ...fetchOptions } = options;
+  const token = noAuth ? null : await getAccessToken();
 
   const makeRequest = async (t: string | null) =>
     fetch(`${API_URL}${path}`, {
-      ...options,
+      ...fetchOptions,
+      signal: makeTimeoutSignal(15_000),
       headers: {
-        'Content-Type': 'application/json',
+        ...(fetchOptions.body != null ? { 'Content-Type': 'application/json' } : {}),
         ...(t ? { Authorization: `Bearer ${t}` } : {}),
-        ...(options.headers ?? {}),
+        ...(fetchOptions.headers ?? {}),
       },
     });
 
   let res = await makeRequest(token);
 
-  if (res.status === 401) {
-    token = await refreshAccessToken();
-    if (!token) throw new ApiError(401, 'Session expired');
-    res = await makeRequest(token);
+  if (!noAuth && res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (!newToken) throw new ApiError(401, 'Session expired');
+    res = await makeRequest(newToken);
   }
 
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({ message: 'Unknown error' }))) as { message: string };
+    const err = (await res.json().catch(() => ({ message: 'Unknown error' }))) as {
+      message: string;
+    };
     throw new ApiError(res.status, err.message);
   }
 

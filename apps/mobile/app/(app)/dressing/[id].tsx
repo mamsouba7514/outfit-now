@@ -21,12 +21,20 @@ import {
 } from 'react-native';
 
 import { useDressingStore } from '../../../hooks/useDressing';
+import { requestTryOnItem } from '../../../lib/avatar';
 import { getDressingItem, updateDressingItem } from '../../../lib/dressing';
 
 const CATEGORY_FR: Record<string, string> = {
-  tops: 'Hauts', bottoms: 'Bas', dresses: 'Robes', outerwear: 'Manteaux',
-  shoes: 'Chaussures', bags: 'Sacs', accessories: 'Accessoires',
-  swimwear: 'Maillots', activewear: 'Sport', underwear: 'Sous-vêtements',
+  tops: 'Hauts',
+  bottoms: 'Bas',
+  dresses: 'Robes',
+  outerwear: 'Manteaux',
+  shoes: 'Chaussures',
+  bags: 'Sacs',
+  accessories: 'Accessoires',
+  swimwear: 'Maillots',
+  activewear: 'Sport',
+  underwear: 'Sous-vêtements',
 };
 
 export default function DressingItemScreen() {
@@ -40,6 +48,9 @@ export default function DressingItemScreen() {
   const [saleModalVisible, setSaleModalVisible] = useState(false);
   const [priceInput, setPriceInput] = useState('');
   const [saleLoading, setSaleLoading] = useState(false);
+  const [tryonLoading, setTryonLoading] = useState(false);
+  const [tryonUrl, setTryonUrl] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     getDressingItem(id)
@@ -48,13 +59,32 @@ export default function DressingItemScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  async function handleTryOn() {
+    if (!item) return;
+    setTryonLoading(true);
+    setTryonUrl(null);
+    try {
+      const result = await requestTryOnItem(item.id);
+      if (result.status === 'completed' && result.resultUrl) {
+        setTryonUrl(result.resultUrl);
+      } else {
+        Alert.alert('Essayage', result.message ?? 'Réessaie dans quelques secondes.');
+      }
+    } catch {
+      Alert.alert('Erreur', 'Essayage impossible. Vérifie ton selfie dans le mannequin.');
+    } finally {
+      setTryonLoading(false);
+    }
+  }
+
   async function handleWorn() {
     if (!item) return;
     await markWorn(item.id);
-    setItem((i) => i ? { ...i, wornCount: i.wornCount + 1 } : i);
+    setItem((i) => (i ? { ...i, wornCount: i.wornCount + 1 } : i));
   }
 
   function handleDelete() {
+    if (deleteLoading) return;
     Alert.alert('Supprimer', 'Supprimer cette pièce de ton dressing ?', [
       { text: 'Annuler', style: 'cancel' },
       {
@@ -62,8 +92,15 @@ export default function DressingItemScreen() {
         style: 'destructive',
         onPress: async () => {
           if (!item) return;
-          await removeItem(item.id);
-          router.back();
+          setDeleteLoading(true);
+          try {
+            await removeItem(item.id);
+            router.back();
+          } catch (e) {
+            setDeleteLoading(false);
+            const msg = e instanceof Error ? e.message : String(e);
+            Alert.alert('Erreur', msg);
+          }
         },
       },
     ]);
@@ -83,7 +120,7 @@ export default function DressingItemScreen() {
 
     try {
       await updateDressingItem(item.id, { forSale: true, askingPrice });
-      setItem((i) => i ? { ...i, forSale: true, askingPrice } : i);
+      setItem((i) => (i ? { ...i, forSale: true, askingPrice } : i));
       setSaleModalVisible(false);
     } catch {
       Alert.alert('Erreur', 'Impossible de mettre en vente. Réessaie.');
@@ -97,7 +134,7 @@ export default function DressingItemScreen() {
     setSaleLoading(true);
     try {
       await updateDressingItem(item.id, { forSale: false, askingPrice: null });
-      setItem((i) => i ? { ...i, forSale: false, askingPrice: null } : i);
+      setItem((i) => (i ? { ...i, forSale: false, askingPrice: null } : i));
     } catch {
       Alert.alert('Erreur', 'Impossible de retirer de la vente. Réessaie.');
     } finally {
@@ -122,7 +159,11 @@ export default function DressingItemScreen() {
     const color = item?.primaryColor ?? '';
     const brand = item?.brand ? ` ${item.brand}` : '';
     const price = item?.askingPrice != null ? `💰 ${item.askingPrice} €` : '💰 Prix à discuter';
-    const tags = item?.styleTags.slice(0, 3).map((t) => `#${t}`).join(' ') ?? '';
+    const tags =
+      item?.styleTags
+        .slice(0, 3)
+        .map((t) => `#${t}`)
+        .join(' ') ?? '';
 
     return [
       `🧥 ${cat}${brand} — ${color}`,
@@ -132,7 +173,10 @@ export default function DressingItemScreen() {
       '',
       'Pièce vendue via Outfit Now ✦',
       'outfitnow.app',
-    ].filter((l) => l !== undefined).join('\n').trim();
+    ]
+      .filter((l) => l !== undefined)
+      .join('\n')
+      .trim();
   }
 
   async function handleShare() {
@@ -149,11 +193,11 @@ export default function DressingItemScreen() {
       } catch {
         // Fallback to clipboard
         await Clipboard.setStringAsync(text);
-        Alert.alert('Copié ✓', 'Le texte de l\'annonce a été copié dans le presse-papier.');
+        Alert.alert('Copié ✓', "Le texte de l'annonce a été copié dans le presse-papier.");
       }
     } else {
       await Clipboard.setStringAsync(text);
-      Alert.alert('Copié ✓', 'Le texte de l\'annonce a été copié dans le presse-papier.');
+      Alert.alert('Copié ✓', "Le texte de l'annonce a été copié dans le presse-papier.");
     }
   }
 
@@ -225,12 +269,36 @@ export default function DressingItemScreen() {
             {item.lastWornAt && (
               <View style={styles.stat}>
                 <Text style={styles.statValue}>
-                  {new Date(item.lastWornAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  {new Date(item.lastWornAt).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
                 </Text>
                 <Text style={styles.statLabel}>DERNIÈRE FOIS</Text>
               </View>
             )}
           </View>
+
+          {/* ── Try-on IA ──────────────────────────────────────────────────── */}
+          <TouchableOpacity
+            style={styles.tryonButton}
+            onPress={handleTryOn}
+            disabled={tryonLoading}
+            activeOpacity={0.85}
+          >
+            {tryonLoading ? (
+              <ActivityIndicator size="small" color={colors.neutral[950]} />
+            ) : (
+              <Text style={styles.tryonButtonText}>✦ ESSAYER SUR MOI</Text>
+            )}
+          </TouchableOpacity>
+
+          {tryonUrl && (
+            <View style={styles.tryonResult}>
+              <Image source={{ uri: tryonUrl }} style={styles.tryonImage} contentFit="cover" />
+              <Text style={styles.tryonLabel}>ESSAYAGE IA</Text>
+            </View>
+          )}
 
           <TouchableOpacity style={styles.wornButton} onPress={handleWorn} activeOpacity={0.85}>
             <Text style={styles.wornButtonText}>JE LA PORTE AUJOURD'HUI</Text>
@@ -244,7 +312,10 @@ export default function DressingItemScreen() {
             disabled={saleLoading}
           >
             {saleLoading ? (
-              <ActivityIndicator size="small" color={item.forSale ? colors.primary[400] : colors.neutral[400]} />
+              <ActivityIndicator
+                size="small"
+                color={item.forSale ? colors.primary[400] : colors.neutral[400]}
+              />
             ) : (
               <Text style={[styles.saleButtonText, item.forSale && styles.saleButtonTextActive]}>
                 {item.forSale
@@ -260,14 +331,25 @@ export default function DressingItemScreen() {
               <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.85}>
                 <Text style={styles.shareBtnText}>↗ PARTAGER</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.shareBtn} onPress={handleCopyListing} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.shareBtn}
+                onPress={handleCopyListing}
+                activeOpacity={0.85}
+              >
                 <Text style={styles.shareBtnText}>⎘ COPIER L'ANNONCE</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete} activeOpacity={0.85}>
-            <Text style={styles.deleteButtonText}>Supprimer du dressing</Text>
+          <TouchableOpacity
+            style={[styles.deleteButton, deleteLoading && { opacity: 0.5 }]}
+            onPress={handleDelete}
+            activeOpacity={0.85}
+            disabled={deleteLoading}
+          >
+            <Text style={styles.deleteButtonText}>
+              {deleteLoading ? 'Suppression…' : 'Supprimer du dressing'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -288,9 +370,7 @@ export default function DressingItemScreen() {
 
             <Text style={styles.modalEyebrow}>REVENTE</Text>
             <Text style={styles.modalTitle}>Quel est ton prix ?</Text>
-            <Text style={styles.modalSub}>
-              Laisse vide si tu préfères ne pas afficher de prix.
-            </Text>
+            <Text style={styles.modalSub}>Laisse vide si tu préfères ne pas afficher de prix.</Text>
 
             <View style={styles.priceRow}>
               <TextInput
@@ -419,6 +499,43 @@ const styles = StyleSheet.create({
     color: colors.neutral[600],
     letterSpacing: 2,
     fontWeight: typography.fontWeight.medium,
+  },
+  tryonButton: {
+    backgroundColor: colors.primary[500],
+    paddingVertical: spacing[4],
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing[2],
+    shadowColor: colors.primary[500],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 7,
+  },
+  tryonButtonText: {
+    color: colors.neutral[950],
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.black,
+    letterSpacing: 2,
+  },
+  tryonResult: {
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.primary[400],
+  },
+  tryonImage: { width: '100%', height: 420 },
+  tryonLabel: {
+    position: 'absolute',
+    bottom: spacing[3],
+    right: spacing[3],
+    fontSize: 9,
+    color: colors.primary[400],
+    letterSpacing: 2,
+    fontWeight: typography.fontWeight.black,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing[2],
+    paddingVertical: 3,
   },
   wornButton: {
     backgroundColor: colors.primary[600],
