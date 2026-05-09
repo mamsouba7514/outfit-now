@@ -70,8 +70,12 @@ export default function DressingItemScreen() {
       } else {
         Alert.alert('Essayage', result.message ?? 'Réessaie dans quelques secondes.');
       }
-    } catch {
-      Alert.alert('Erreur', 'Essayage impossible. Vérifie ton selfie dans le mannequin.');
+    } catch (e) {
+      const msg =
+        (e instanceof Error ? e.message : null) ??
+        (e as { message?: string })?.message ??
+        JSON.stringify(e);
+      Alert.alert('Erreur', msg);
     } finally {
       setTryonLoading(false);
     }

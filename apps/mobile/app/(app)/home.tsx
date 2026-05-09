@@ -3,7 +3,7 @@ import { colors, spacing } from '@outfit-now/design-tokens';
 import type { Outfit } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -59,9 +59,11 @@ export default function HomeScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     void load();

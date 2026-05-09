@@ -15,13 +15,13 @@ export interface TryOnResult {
 }
 
 const CATEGORY_MAP: Record<string, TryOnCategory> = {
-  tops:       'tops',
+  tops: 'tops',
   activewear: 'tops',
-  outerwear:  'tops',
-  bottoms:    'bottoms',
-  dresses:    'one-piece',
-  swimwear:   'one-piece',
-  underwear:  'one-piece',
+  outerwear: 'tops',
+  bottoms: 'bottoms',
+  dresses: 'one-piece',
+  swimwear: 'one-piece',
+  underwear: 'one-piece',
 };
 
 export class TryOnService {
@@ -36,16 +36,31 @@ export class TryOnService {
     return !!this.apiKey;
   }
 
+  private async toBase64DataUri(url: string): Promise<string> {
+    const res = await fetch(url);
+    const buffer = await res.arrayBuffer();
+    const contentType = res.headers.get('content-type') ?? 'image/jpeg';
+    return `data:${contentType};base64,${Buffer.from(buffer).toString('base64')}`;
+  }
+
   async runTryOn(params: {
     modelImageUrl: string;
     garmentImageUrl: string;
     category: string;
   }): Promise<TryOnResult> {
     if (!this.apiKey) {
-      return { status: 'unavailable', message: 'Essayage IA bientôt disponible. Configure FASHN_API_KEY.' };
+      return {
+        status: 'unavailable',
+        message: 'Essayage IA bientôt disponible. Configure FASHN_API_KEY.',
+      };
     }
 
     const category = CATEGORY_MAP[params.category] ?? 'tops';
+
+    const [modelImage, garmentImage] = await Promise.all([
+      this.toBase64DataUri(params.modelImageUrl),
+      this.toBase64DataUri(params.garmentImageUrl),
+    ]);
 
     const runRes = await fetch(`${this.baseUrl}/run`, {
       method: 'POST',
@@ -54,12 +69,14 @@ export class TryOnService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model_image: params.modelImageUrl,
-        garment_image: params.garmentImageUrl,
-        category,
-        mode: 'balanced',
-        garment_photo_type: 'auto',
-        nsfw_filter: true,
+        model_name: 'tryon-v1.6',
+        inputs: {
+          model_image: modelImage,
+          garment_image: garmentImage,
+          category,
+          mode: 'balanced',
+          garment_photo_type: 'auto',
+        },
       }),
     });
 
@@ -77,15 +94,27 @@ export class TryOnService {
       const statusRes = await fetch(`${this.baseUrl}/status/${jobId}`, {
         headers: { Authorization: `Bearer ${this.apiKey}` },
       });
-      const statusData = (await statusRes.json()) as { status: string; output?: string[]; error?: string };
+      const statusData = (await statusRes.json()) as {
+        status: string;
+        output?: string[];
+        error?: unknown;
+      };
 
       if (statusData.status === 'completed' && statusData.output?.[0]) {
         return { status: 'completed', resultUrl: statusData.output[0], jobId };
       }
       if (statusData.status === 'failed') {
-        throw new Error(statusData.error ?? 'Try-on failed');
+        const errMsg =
+          typeof statusData.error === 'string'
+            ? statusData.error
+            : (JSON.stringify(statusData.error) ?? 'Try-on failed');
+        throw new Error(errMsg);
       }
     }
-    return { status: 'processing', jobId, message: 'Génération en cours, réessaie dans quelques secondes.' };
+    return {
+      status: 'processing',
+      jobId,
+      message: 'Génération en cours, réessaie dans quelques secondes.',
+    };
   }
 }
