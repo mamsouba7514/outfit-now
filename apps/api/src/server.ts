@@ -7,6 +7,7 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
 
+import './workers/index.js';
 import { env } from './lib/env.js';
 import { redis } from './lib/redis.js';
 import { affiliateRoutes } from './routes/affiliate.js';
@@ -46,7 +47,10 @@ export async function buildApp() {
   await app.register(helmet, { contentSecurityPolicy: false });
   const allowedOrigins =
     env.NODE_ENV === 'production'
-      ? (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean)
+      ? (env.ALLOWED_ORIGINS ?? '')
+          .split(',')
+          .map((o) => o.trim())
+          .filter(Boolean)
       : true;
   await app.register(cors, { origin: allowedOrigins });
   await app.register(sensible);
@@ -99,7 +103,17 @@ export async function buildApp() {
     uiConfig: { docExpansion: 'list' },
   });
 
-  app.get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }));
+  app.get('/health', async () => {
+    const checks: Record<string, string> = { api: 'ok' };
+    try {
+      await redis.ping();
+      checks.redis = 'ok';
+    } catch {
+      checks.redis = 'error';
+    }
+    const healthy = Object.values(checks).every((v) => v === 'ok');
+    return { status: healthy ? 'ok' : 'degraded', checks, timestamp: new Date().toISOString() };
+  });
 
   await app.register(authRoutes);
   await app.register(meRoutes);
@@ -142,4 +156,6 @@ async function start() {
   }
 }
 
-void start();
+if (env.NODE_ENV !== 'test') {
+  void start();
+}

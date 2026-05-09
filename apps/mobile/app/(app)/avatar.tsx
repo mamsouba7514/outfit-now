@@ -42,7 +42,7 @@ import {
 import { getDressingItems } from '../../lib/dressing';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MANNEQUIN_HEIGHT = SCREEN_HEIGHT * 0.52;
+const MANNEQUIN_HEIGHT = SCREEN_HEIGHT * 0.65;
 const MANNEQUIN_WIDTH = SCREEN_WIDTH;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ function FashionMannequin({
 
   return (
     <Svg
-      width={MANNEQUIN_WIDTH * 0.65}
+      width={MANNEQUIN_WIDTH * 0.75}
       height={MANNEQUIN_HEIGHT}
       viewBox={`0 0 ${svgW} ${svgH}`}
       style={{ alignSelf: 'center' }}
@@ -1281,7 +1281,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[4],
     marginTop: spacing[3],
     position: 'relative',
-    overflow: 'hidden',
     minHeight: MANNEQUIN_HEIGHT,
     borderRadius: 16,
   },
