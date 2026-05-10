@@ -3,6 +3,8 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { runClaudeAgent } from '../lib/claude-agent.js';
+import { env } from '../lib/env.js';
+import { runKarlSession } from '../lib/karl-managed-agent.js';
 import { prisma } from '../lib/prisma.js';
 
 import { broadcastAgentStatus } from './dash-ws.js';
@@ -52,6 +54,11 @@ export async function dashAgentRoutes(app: FastifyInstance) {
       });
 
       if (agent.type === DashAgentType.CLAUDE) {
+        const isKarl =
+          agent.name.toLowerCase().includes('karl') &&
+          Boolean(env.KARL_AGENT_ID) &&
+          Boolean(env.KARL_ENVIRONMENT_ID);
+
         void (async () => {
           await prisma.dashAgent.update({
             where: { id: agent.id },
@@ -66,9 +73,18 @@ export async function dashAgentRoutes(app: FastifyInstance) {
                 status: 'IN_PROGRESS',
               },
             });
-            const result = await runClaudeAgent(agent.name, agent.role, body.data.content);
+
+            let outputContent: string;
+            if (isKarl) {
+              const result = await runKarlSession(userId, body.data.content);
+              outputContent = result.response;
+            } else {
+              const result = await runClaudeAgent(agent.name, agent.role, body.data.content);
+              outputContent = result.content;
+            }
+
             await prisma.dashOutput.create({
-              data: { taskId: task.id, agentId: agent.id, content: result.content, type: 'TEXT' },
+              data: { taskId: task.id, agentId: agent.id, content: outputContent, type: 'TEXT' },
             });
             await prisma.dashTask.update({ where: { id: task.id }, data: { status: 'IN_REVIEW' } });
             await prisma.dashAgent.update({
