@@ -229,30 +229,22 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {outfits.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.suggestionsScroll}
-            contentContainerStyle={{ gap: 12, paddingRight: spacing[5] }}
-          >
-            {outfits.slice(0, 6).map((outfit, i) => (
-              <SuggestionCard key={outfit.id} outfit={outfit} index={i} />
-            ))}
-          </ScrollView>
-        ) : !loading ? (
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.surface }]}>
-              <Ionicons name="shirt-outline" size={32} color={colors.primary[500]} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
-              Aucune tenue générée
-            </Text>
-            <Text style={[styles.emptySub, { color: theme.colors.textMuted }]}>
-              Appuie sur "Générer une tenue" pour commencer
-            </Text>
-          </View>
-        ) : null}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.suggestionsScroll}
+          contentContainerStyle={{ gap: 12, paddingRight: spacing[5] }}
+        >
+          {outfits.length > 0
+            ? outfits
+                .slice(0, 6)
+                .map((outfit, i) => <SuggestionCard key={outfit.id} outfit={outfit} index={i} />)
+            : !loading
+              ? MOCK_OUTFITS.map((mock, i) => (
+                  <MockSuggestionCard key={mock.id} mock={mock} index={i} />
+                ))
+              : null}
+        </ScrollView>
       </Animated.View>
 
       {/* Weekly weather modal */}
@@ -311,12 +303,28 @@ const OCCASION_SUBS = [
   'Activité',
   'Détente',
 ];
+const OCCASION_IMAGES = [
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
+  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80',
+  'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=400&q=80',
+  'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80',
+  'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=400&q=80',
+  'https://images.unsplash.com/photo-1523381294911-8d3cead13475?auto=format&fit=crop&w=400&q=80',
+];
+
+const MOCK_OUTFITS = OCCASION_LABELS.map((label, i) => ({
+  id: `mock-${i}`,
+  label,
+  sub: OCCASION_SUBS[i],
+  imageUrl: OCCASION_IMAGES[i],
+}));
 
 function SuggestionCard({ outfit, index }: { outfit: Outfit; index: number }) {
   const theme = useAppTheme();
   const firstItem = outfit.items?.[0];
   const cardW = SCREEN_WIDTH * 0.44;
   const [liked, setLiked] = useState(false);
+  const fallbackImage = OCCASION_IMAGES[index % OCCASION_IMAGES.length];
 
   return (
     <View
@@ -325,19 +333,11 @@ function SuggestionCard({ outfit, index }: { outfit: Outfit; index: number }) {
         { width: cardW, backgroundColor: theme.colors.card, borderColor: theme.colors.border },
       ]}
     >
-      {firstItem?.imageUrl ? (
-        <Image source={{ uri: firstItem.imageUrl }} style={suggStyles.img} contentFit="cover" />
-      ) : (
-        <View
-          style={[
-            suggStyles.img,
-            suggStyles.imgPlaceholder,
-            { backgroundColor: theme.colors.surface },
-          ]}
-        >
-          <Ionicons name="shirt-outline" size={32} color={colors.primary[300]} />
-        </View>
-      )}
+      <Image
+        source={{ uri: firstItem?.imageUrl ?? fallbackImage }}
+        style={suggStyles.img}
+        contentFit="cover"
+      />
       <TouchableOpacity style={suggStyles.heartBtn} onPress={() => setLiked(!liked)}>
         <Ionicons
           name={liked ? 'heart' : 'heart-outline'}
@@ -351,6 +351,44 @@ function SuggestionCard({ outfit, index }: { outfit: Outfit; index: number }) {
         </Text>
         <Text style={[suggStyles.sub, { color: theme.colors.textMuted }]} numberOfLines={1}>
           {OCCASION_SUBS[index % OCCASION_SUBS.length]}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function MockSuggestionCard({
+  mock,
+  index: _index,
+}: {
+  mock: (typeof MOCK_OUTFITS)[number];
+  index: number;
+}) {
+  const theme = useAppTheme();
+  const cardW = SCREEN_WIDTH * 0.44;
+  const [liked, setLiked] = useState(false);
+
+  return (
+    <View
+      style={[
+        suggStyles.card,
+        { width: cardW, backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+      ]}
+    >
+      <Image source={{ uri: mock.imageUrl }} style={suggStyles.img} contentFit="cover" />
+      <TouchableOpacity style={suggStyles.heartBtn} onPress={() => setLiked(!liked)}>
+        <Ionicons
+          name={liked ? 'heart' : 'heart-outline'}
+          size={18}
+          color={liked ? '#FF6B6B' : '#A0AEC0'}
+        />
+      </TouchableOpacity>
+      <View style={suggStyles.info}>
+        <Text style={[suggStyles.title, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+          {mock.label}
+        </Text>
+        <Text style={[suggStyles.sub, { color: theme.colors.textMuted }]} numberOfLines={1}>
+          {mock.sub}
         </Text>
       </View>
     </View>
