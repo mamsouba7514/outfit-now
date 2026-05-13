@@ -1,162 +1,75 @@
-import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing } from '@outfit-now/design-tokens';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useRef, useEffect } from 'react';
-import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  StatusBar,
-  Animated,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const { width } = Dimensions.get('window');
-
-const SLIDES = [
-  {
-    label: '01',
-    title: 'Ton dressing,\nenfin organisé.',
-    subtitle: "Scanne tes pièces en quelques secondes. L'IA catégorise, détecte les couleurs et les styles automatiquement.",
-    accent: 'SCAN',
-  },
-  {
-    label: '02',
-    title: 'Un styliste IA\ndans ta poche.',
-    subtitle: 'Décris ton occasion — réunion, soirée, week-end — et reçois 3 tenues composées depuis ton propre dressing.',
-    accent: 'COMPOSE',
-  },
-  {
-    label: '03',
-    title: 'Porte mieux.\nAchète moins.',
-    subtitle: "Découvre les pièces que tu n'utilises jamais. Réduis les achats impulsifs et redonne vie à ce que tu possèdes déjà.",
-    accent: 'STYLE',
-  },
-];
-
-export default function IntroScreen() {
+export default function WelcomeScreen() {
   const router = useRouter();
-  const scrollRef = useRef<ScrollView>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const insets = useSafeAreaInsets();
 
-  const contentOpacity = useRef(new Animated.Value(1)).current;
-  const contentTranslateY = useRef(new Animated.Value(0)).current;
-  const buttonScale = useRef(new Animated.Value(1)).current;
-  const dotWidths = useRef(SLIDES.map((_, i) => new Animated.Value(i === 0 ? 32 : 16))).current;
-
-  useEffect(() => {
-    // Animate content fade+slide on slide change
-    Animated.parallel([
-      Animated.sequence([
-        Animated.timing(contentOpacity, { toValue: 0, duration: 120, useNativeDriver: true }),
-        Animated.timing(contentOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-      ]),
-      Animated.sequence([
-        Animated.timing(contentTranslateY, { toValue: 12, duration: 120, useNativeDriver: true }),
-        Animated.timing(contentTranslateY, { toValue: 0, duration: 300, useNativeDriver: true }),
-      ]),
-    ]).start();
-
-    // Animate dots
-    dotWidths.forEach((w, i) => {
-      Animated.timing(w, {
-        toValue: i === activeIndex ? 32 : 16,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    });
-  }, [activeIndex]);
-
-  function onScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
-    const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-    if (idx !== activeIndex) setActiveIndex(idx);
-  }
-
-  function goNext() {
-    if (activeIndex < SLIDES.length - 1) {
-      scrollRef.current?.scrollTo({ x: (activeIndex + 1) * width, animated: true });
-    } else {
-      void finish();
-    }
-  }
-
-  function onButtonPressIn() {
-    Animated.spring(buttonScale, { toValue: 0.97, useNativeDriver: true, speed: 50 }).start();
-  }
-  function onButtonPressOut() {
-    Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true, speed: 30 }).start();
-  }
-
-  async function finish() {
+  async function go(target: '/(auth)/signup' | '/(auth)/login') {
     await AsyncStorage.setItem('intro_seen', 'true');
-    router.replace('/(auth)/login');
+    router.replace(target);
   }
-
-  const isLast = activeIndex === SLIDES.length - 1;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
+    >
       <StatusBar barStyle="dark-content" />
 
-      <TouchableOpacity style={styles.skip} onPress={finish}>
-        <Text style={styles.skipText}>PASSER</Text>
-      </TouchableOpacity>
-
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-      >
-        {SLIDES.map((s, i) => (
-          <View key={i} style={styles.slide}>
-            <Animated.View style={{ opacity: i === activeIndex ? contentOpacity : 1, transform: [{ translateY: i === activeIndex ? contentTranslateY : 0 }] }}>
-              <Text style={styles.accentLabel}>{s.accent}</Text>
-              <View style={styles.divider} />
-              <Text style={styles.slideNumber}>{s.label}</Text>
-              <Text style={styles.slideTitle}>{s.title}</Text>
-              <Text style={styles.slideSubtitle}>{s.subtitle}</Text>
-            </Animated.View>
+      {/* Logo */}
+      <View style={styles.logoSection}>
+        <View style={styles.logoIconWrap}>
+          <View style={styles.logoIconCircle}>
+            <Ionicons name="shirt-outline" size={40} color={colors.primary[500]} />
           </View>
-        ))}
-      </ScrollView>
+        </View>
+        <Text style={styles.logoTitle}>OUTFIT{'\n'}NOW</Text>
+        <Text style={styles.logoTagline}>Ton style, maintenant.</Text>
+      </View>
 
-      {/* Gradient overlay fading into background at bottom */}
-      <LinearGradient
-        colors={['transparent', colors.neutral[950]]}
-        style={styles.gradient}
-        pointerEvents="none"
-      />
+      {/* CTAs */}
+      <View style={styles.ctaSection}>
+        <TouchableOpacity
+          style={[styles.primaryBtnWrap, styles.primaryBtn]}
+          onPress={() => go('/(auth)/signup')}
+          activeOpacity={0.88}
+        >
+          <Text style={styles.primaryBtnText}>Créer mon compte</Text>
+        </TouchableOpacity>
 
-      <View style={styles.footer}>
-        <View style={styles.dots}>
-          {SLIDES.map((_, i) => (
-            <Animated.View
-              key={i}
-              style={[styles.dot, { width: dotWidths[i] }, i === activeIndex && styles.dotActive]}
-            />
-          ))}
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => go('/(auth)/login')}
+          activeOpacity={0.88}
+        >
+          <Text style={styles.secondaryBtnText}>Se connecter</Text>
+        </TouchableOpacity>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>Continuer avec</Text>
+          <View style={styles.dividerLine} />
         </View>
 
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-          <TouchableOpacity
-            style={styles.nextBtn}
-            onPress={goNext}
-            onPressIn={onButtonPressIn}
-            onPressOut={onButtonPressOut}
-            activeOpacity={1}
-          >
-            <Text style={styles.nextBtnText}>
-              {isLast ? 'COMMENCER' : 'SUIVANT'}
-            </Text>
+        <View style={styles.socialRow}>
+          <TouchableOpacity style={styles.socialBtn} activeOpacity={0.8}>
+            <Text style={styles.socialBtnText}>G</Text>
           </TouchableOpacity>
-        </Animated.View>
+          <TouchableOpacity style={styles.socialBtn} activeOpacity={0.8}>
+            <Ionicons name="logo-apple" size={20} color="#0D1B2A" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.socialBtn}
+            onPress={() => go('/(auth)/login')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="mail-outline" size={20} color="#0D1B2A" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -165,96 +78,101 @@ export default function IntroScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral[950],
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing[6],
+    justifyContent: 'space-between',
   },
-  skip: {
-    position: 'absolute',
-    top: spacing[16],
-    right: spacing[6],
-    zIndex: 10,
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
-  },
-  skipText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[500],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
-  },
-  slide: {
-    width,
+  logoSection: {
     flex: 1,
-    paddingHorizontal: spacing[8],
-    paddingTop: spacing[16] + spacing[16],
-    gap: spacing[5],
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[3],
   },
-  accentLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[400],
+  logoIconWrap: { marginBottom: spacing[2] },
+  logoIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#dbeafe',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoTitle: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 40,
+    color: '#0D1B2A',
+    textAlign: 'center',
+    lineHeight: 46,
     letterSpacing: 4,
-    fontWeight: typography.fontWeight.black,
   },
-  divider: {
-    width: 32,
-    height: 1,
-    backgroundColor: colors.primary[600],
+  logoTagline: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 15,
+    color: '#A0AEC0',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  ctaSection: {
+    gap: spacing[3],
+  },
+  primaryBtnWrap: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  primaryBtn: {
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    backgroundColor: '#00C4BF',
+  },
+  primaryBtnText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  secondaryBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  secondaryBtnText: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 16,
+    color: '#0D1B2A',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
     marginVertical: spacing[1],
   },
-  slideNumber: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[700],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
+  dividerText: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 12,
+    color: '#A0AEC0',
   },
-  slideTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['4xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    lineHeight: 50,
-    marginTop: spacing[2],
-  },
-  slideSubtitle: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[500],
-    lineHeight: 26,
-    maxWidth: 320,
-  },
-  gradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    zIndex: 1,
-  },
-  footer: {
-    paddingHorizontal: spacing[8],
-    paddingBottom: spacing[12],
-    gap: spacing[6],
-    zIndex: 2,
-  },
-  dots: {
+  socialRow: {
     flexDirection: 'row',
-    gap: spacing[2],
+    justifyContent: 'center',
+    gap: spacing[4],
   },
-  dot: {
-    height: 2,
-    backgroundColor: colors.neutral[700],
-  },
-  dotActive: {
-    backgroundColor: colors.primary[400],
-  },
-  nextBtn: {
-    backgroundColor: colors.primary[600],
-    paddingVertical: spacing[4],
+  socialBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 9999,
+    backgroundColor: '#FFFFFF',
   },
-  nextBtnText: {
-    color: colors.neutral[0],
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.black,
-    letterSpacing: 3,
+  socialBtnText: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 18,
+    color: '#0D1B2A',
   },
 });

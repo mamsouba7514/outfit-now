@@ -1,6 +1,5 @@
 import { spacing } from '@outfit-now/design-tokens';
 import type { Gender } from '@outfit-now/shared-types';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -121,10 +120,6 @@ export default function ProfileScreen() {
   const genderLabel = GENDER_OPTIONS.find((g) => g.value === user?.gender)?.label ?? '—';
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || '?';
 
-  const headerColors: [string, string, string] = theme.dark
-    ? ['#0f172a', '#0a0f1e', '#0a0f1e']
-    : ['#dbeafe', '#f8faff', '#ffffff'];
-
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -132,12 +127,7 @@ export default function ProfileScreen() {
     >
       <StatusBar barStyle={theme.colors.statusBar} />
 
-      <LinearGradient
-        colors={headerColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
+      <View style={styles.headerGradient}>
         <View style={styles.headerRow}>
           <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Mon profil</Text>
           <View style={{ flexDirection: 'row', gap: spacing[3], alignItems: 'center' }}>
@@ -157,7 +147,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Avatar */}
       <View
@@ -166,14 +156,9 @@ export default function ProfileScreen() {
           { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
         ]}
       >
-        <LinearGradient
-          colors={['#1e40af', '#2563eb', '#00c4bf']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.avatar}
-        >
+        <View style={styles.avatar}>
           <Text style={styles.avatarInitials}>{initials}</Text>
-        </LinearGradient>
+        </View>
         <View style={styles.avatarInfo}>
           <Text style={[styles.avatarName, { color: theme.colors.textPrimary }]}>
             {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mon compte'}
@@ -286,16 +271,9 @@ export default function ProfileScreen() {
           {user?.tier !== 'premium' && (
             <TouchableOpacity
               onPress={() => router.push('/(app)/premium' as never)}
-              style={{ borderRadius: 9999, overflow: 'hidden' }}
+              style={styles.upgradeBtn}
             >
-              <LinearGradient
-                colors={['#1e40af', '#2563eb', '#00c4bf']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.upgradeBtn}
-              >
-                <Text style={styles.upgradeBtnText}>PREMIUM →</Text>
-              </LinearGradient>
+              <Text style={styles.upgradeBtnText}>PREMIUM →</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -359,19 +337,12 @@ export default function ProfileScreen() {
       {/* Boutons édition */}
       {editing && (
         <View style={styles.editActions}>
-          <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveBtnWrap}>
-            <LinearGradient
-              colors={['#1e40af', '#2563eb', '#00c4bf']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.saveBtn}
-            >
-              {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.saveBtnText}>ENREGISTRER</Text>
-              )}
-            </LinearGradient>
+          <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveBtn}>
+            {saving ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.saveBtnText}>ENREGISTRER</Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.cancelBtn}
@@ -403,7 +374,7 @@ export default function ProfileScreen() {
 
       {/* Mannequin */}
       <TouchableOpacity
-        style={[styles.avatarBanner, { backgroundColor: theme.dark ? '#1e3a5f' : '#dbeafe' }]}
+        style={[styles.avatarBanner, { backgroundColor: theme.colors.surface }]}
         onPress={() => router.push('/(app)/avatar' as never)}
         activeOpacity={0.8}
       >
@@ -491,6 +462,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: '#00C4BF',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -544,7 +516,12 @@ const styles = StyleSheet.create({
   planRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   planName: { fontFamily: 'Poppins_700Bold', fontSize: 15, letterSpacing: 1 },
   planSub: { fontFamily: 'Poppins_400Regular', fontSize: 12, marginTop: 3 },
-  upgradeBtn: { paddingHorizontal: spacing[4], paddingVertical: spacing[2], borderRadius: 9999 },
+  upgradeBtn: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: 9999,
+    backgroundColor: '#00C4BF',
+  },
   upgradeBtnText: {
     fontFamily: 'Poppins_700Bold',
     color: '#FFFFFF',
@@ -564,16 +541,12 @@ const styles = StyleSheet.create({
   tagTextActive: { color: '#FFFFFF' },
 
   editActions: { gap: spacing[2] },
-  saveBtnWrap: {
+  saveBtn: {
+    paddingVertical: spacing[4],
+    alignItems: 'center',
     borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: '#00C4BF',
   },
-  saveBtn: { paddingVertical: spacing[4], alignItems: 'center', borderRadius: 14 },
   saveBtnText: { fontFamily: 'Poppins_700Bold', color: '#FFFFFF', fontSize: 13, letterSpacing: 2 },
   cancelBtn: { paddingVertical: spacing[3], alignItems: 'center' },
   cancelBtnText: { fontFamily: 'Poppins_400Regular', fontSize: 13 },
@@ -623,7 +596,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#00C4BF',
+    borderColor: '#E2E8F0',
     padding: spacing[5],
     borderRadius: 16,
   },

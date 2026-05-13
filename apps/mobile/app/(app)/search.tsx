@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '@outfit-now/design-tokens';
 import type { DressingItem } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -184,14 +183,9 @@ function SellItemCard({
           </Text>
         )}
       </View>
-      <LinearGradient
-        colors={['#1e40af', '#2563eb', '#00c4bf']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={sellStyles.listBtn}
-      >
+      <View style={sellStyles.listBtn}>
         <Text style={sellStyles.listBtnText}>Mettre en vente</Text>
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -222,6 +216,7 @@ const sellStyles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 7,
     alignItems: 'center',
+    backgroundColor: '#00C4BF',
   },
   listBtnText: { fontFamily: 'Poppins_600SemiBold', fontSize: 10, color: '#fff' },
 });
@@ -318,15 +313,8 @@ function ListModal({
           <Text style={[modalStyles.hint, { color: theme.colors.textMuted }]}>
             La pièce sera visible par la communauté Outfit Now.
           </Text>
-          <TouchableOpacity style={modalStyles.btnWrap} onPress={handleSubmit}>
-            <LinearGradient
-              colors={['#1e40af', '#2563eb', '#00c4bf']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={modalStyles.btn}
-            >
-              <Text style={modalStyles.btnText}>PUBLIER L'ANNONCE</Text>
-            </LinearGradient>
+          <TouchableOpacity style={[modalStyles.btnWrap, modalStyles.btn]} onPress={handleSubmit}>
+            <Text style={modalStyles.btnText}>PUBLIER L'ANNONCE</Text>
           </TouchableOpacity>
           <TouchableOpacity style={modalStyles.cancelBtn} onPress={onClose}>
             <Text style={[modalStyles.cancelText, { color: theme.colors.textMuted }]}>Annuler</Text>
@@ -397,16 +385,12 @@ const modalStyles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: spacing[2],
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
   },
   btn: {
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+    backgroundColor: '#00C4BF',
   },
   btnText: { fontFamily: 'Poppins_700Bold', fontSize: 14, color: '#fff', letterSpacing: 1 },
   cancelBtn: { paddingVertical: spacing[3], alignItems: 'center' },
@@ -576,26 +560,16 @@ export default function SearchScreen() {
               disabled={!query.trim() || loading}
             >
               {loading ? (
-                <LinearGradient
-                  colors={['#1e40af', '#2563eb', '#00c4bf']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.goBtn}
-                >
+                <View style={styles.goBtn}>
                   <ActivityIndicator size="small" color="#fff" />
-                </LinearGradient>
+                </View>
               ) : query.trim() ? (
-                <LinearGradient
-                  colors={['#1e40af', '#2563eb', '#00c4bf']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.goBtn}
-                >
+                <View style={styles.goBtn}>
                   <Text style={styles.goBtnText}>GO</Text>
-                </LinearGradient>
+                </View>
               ) : (
                 <View style={[styles.goBtn, styles.goBtnInner]}>
-                  <Text style={styles.goBtnText}>GO</Text>
+                  <Text style={[styles.goBtnText, { color: '#A0AEC0' }]}>GO</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -893,11 +867,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     minWidth: 48,
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
   },
   goBtn: {
     paddingHorizontal: spacing[4],
@@ -905,9 +874,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minWidth: 48,
     alignItems: 'center',
+    backgroundColor: '#00C4BF',
   },
   goBtnInner: { backgroundColor: '#E2E8F0' },
-  goBtnDisabled: { backgroundColor: '#E2E8F0', shadowOpacity: 0, elevation: 0 },
+  goBtnDisabled: { backgroundColor: '#E2E8F0' },
   goBtnText: { fontFamily: 'Poppins_700Bold', fontSize: 12, color: '#fff' },
 
   tiersRow: { paddingHorizontal: spacing[4], paddingBottom: spacing[3], gap: 10 },

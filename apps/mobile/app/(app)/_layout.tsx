@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@outfit-now/design-tokens';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, Tabs, Redirect } from 'expo-router';
 import { useEffect } from 'react';
-import { TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { TouchableOpacity, View, StyleSheet, StatusBar } from 'react-native';
 
 import { ThemeContext } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../hooks/useAuth';
@@ -17,14 +16,9 @@ import { initPurchases, identifyUser } from '../../lib/purchases';
 function CenterFAB({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={fabStyles.wrap} activeOpacity={0.85}>
-      <LinearGradient
-        colors={['#1e40af', '#2563eb', '#00c4bf']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={fabStyles.circle}
-      >
+      <View style={fabStyles.circle}>
         <Ionicons name="add" size={30} color="#fff" />
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -40,14 +34,9 @@ const fabStyles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    overflow: 'hidden',
+    backgroundColor: '#00C4BF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
 });
 

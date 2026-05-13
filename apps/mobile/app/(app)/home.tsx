@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '@outfit-now/design-tokens';
 import type { Outfit } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -73,14 +72,8 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bonjour' : 'Bonsoir';
 
-  const headerColors: [string, string, string] = theme.dark
-    ? ['#0f172a', '#0a0f1e', '#0a0f1e']
-    : ['#dbeafe', '#f8faff', '#ffffff'];
-
-  const wardrobeBg = theme.dark ? '#1e3a5f' : '#dbeafe';
-  const wardrobeBorder = theme.dark ? '#1e40af' : '#bfdbfe';
-  const wardrobeLabel = theme.dark ? '#93c5fd' : '#A0AEC0';
-  const wardrobeCount = theme.dark ? '#e2f0ff' : '#0D1B2A';
+  const wardrobeLabel = theme.colors.textMuted;
+  const wardrobeCount = theme.colors.textPrimary;
 
   return (
     <ScrollView
@@ -97,12 +90,7 @@ export default function HomeScreen() {
     >
       <Animated.View style={{ opacity: fadeAnim }}>
         {/* Header */}
-        <LinearGradient
-          colors={headerColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
-        >
+        <View style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={[styles.greeting, { color: theme.colors.textPrimary }]}>
@@ -122,7 +110,7 @@ export default function HomeScreen() {
               <Ionicons name="notifications-outline" size={22} color={theme.colors.textPrimary} />
             </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* 2-col context cards */}
         <View style={styles.contextRow}>
@@ -152,8 +140,8 @@ export default function HomeScreen() {
             style={[
               styles.contextCard,
               {
-                backgroundColor: wardrobeBg,
-                borderColor: wardrobeBorder,
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
                 position: 'relative',
                 overflow: 'hidden',
               },
@@ -178,15 +166,10 @@ export default function HomeScreen() {
           activeOpacity={0.88}
           style={styles.generateBtnWrap}
         >
-          <LinearGradient
-            colors={['#1e40af', '#2563eb', '#00c4bf']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.generateBtn}
-          >
+          <View style={styles.generateBtn}>
             <Ionicons name="sparkles" size={18} color="#fff" />
             <Text style={styles.generateBtnText}>Générer une tenue</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
         {/* Marketplace */}
@@ -256,12 +239,7 @@ export default function HomeScreen() {
           </ScrollView>
         ) : !loading ? (
           <View style={styles.emptyState}>
-            <View
-              style={[
-                styles.emptyIconWrap,
-                { backgroundColor: theme.dark ? '#1e3a5f' : '#dbeafe' },
-              ]}
-            >
+            <View style={[styles.emptyIconWrap, { backgroundColor: theme.colors.surface }]}>
               <Ionicons name="shirt-outline" size={32} color={colors.primary[500]} />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
@@ -307,7 +285,7 @@ function SuggestionCard({ outfit, index }: { outfit: Outfit; index: number }) {
           style={[
             suggStyles.img,
             suggStyles.imgPlaceholder,
-            { backgroundColor: theme.dark ? '#1e3a5f' : '#dbeafe' },
+            { backgroundColor: theme.colors.surface },
           ]}
         >
           <Ionicons name="shirt-outline" size={32} color={colors.primary[300]} />
@@ -446,11 +424,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 7,
   },
   generateBtn: {
     flexDirection: 'row',
@@ -459,6 +432,7 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     paddingVertical: 16,
     borderRadius: 14,
+    backgroundColor: '#00C4BF',
   },
   generateBtnText: {
     fontFamily: 'Poppins_600SemiBold',

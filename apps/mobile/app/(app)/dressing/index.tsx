@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { spacing } from '@outfit-now/design-tokens';
 import type { ClothingCategory, DressingItem } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useEffect, useCallback, useState } from 'react';
 import {
@@ -145,21 +144,12 @@ export default function DressingScreen() {
     );
   }
 
-  const headerColors: [string, string, string] = theme.dark
-    ? ['#0f172a', '#0a0f1e', '#0a0f1e']
-    : ['#dbeafe', '#f8faff', '#ffffff'];
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={theme.colors.statusBar} />
 
       {/* Header */}
-      <LinearGradient
-        colors={headerColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
+      <View style={styles.headerGradient}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Garde-robe</Text>
           <TouchableOpacity
@@ -172,7 +162,7 @@ export default function DressingScreen() {
             <Ionicons name="options-outline" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Search bar */}
       <View
@@ -322,14 +312,9 @@ export default function DressingScreen() {
         onPress={() => router.push('/(app)/scan' as never)}
         activeOpacity={0.85}
       >
-        <LinearGradient
-          colors={['#1e40af', '#2563eb', '#00c4bf']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fab}
-        >
+        <View style={styles.fab}>
           <Text style={styles.fabIcon}>+</Text>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -580,16 +565,12 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 10,
   },
   fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: '#00C4BF',
     alignItems: 'center',
     justifyContent: 'center',
   },

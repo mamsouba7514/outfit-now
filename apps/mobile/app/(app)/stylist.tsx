@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { spacing } from '@outfit-now/design-tokens';
 import type { ComposeMode, Occasion, Outfit, ShoppingResult } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useRef, useState, useEffect } from 'react';
 import {
@@ -362,14 +361,9 @@ export default function StylistScreen() {
             style={styles.btnWornWrap}
             onPress={() => handleAction(selectedOutfit, 'worn')}
           >
-            <LinearGradient
-              colors={['#1e40af', '#2563eb', '#00c4bf']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.btnWorn}
-            >
+            <View style={styles.btnWorn}>
               <Text style={styles.btnPrimaryText}>JE LA PORTE</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.btnSave}
@@ -486,14 +480,9 @@ export default function StylistScreen() {
                     style={styles.btnWornWrap}
                     onPress={() => handleAction(outfit, 'worn')}
                   >
-                    <LinearGradient
-                      colors={['#1e40af', '#2563eb', '#00c4bf']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.btnWorn}
-                    >
+                    <View style={styles.btnWorn}>
                       <Text style={styles.btnPrimaryText}>JE LA PORTE</Text>
-                    </LinearGradient>
+                    </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.btnSave}
@@ -534,20 +523,15 @@ export default function StylistScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Form header with gradient bg */}
-      <LinearGradient
-        colors={['#dbeafe', '#f8faff', '#ffffff']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.formHeaderGradient}
-      >
+      {/* Form header */}
+      <View style={styles.formHeaderGradient}>
         <View style={styles.formHeader}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backRow}>
             <Ionicons name="arrow-back" size={20} color="#0D1B2A" />
           </TouchableOpacity>
           <Text style={styles.formHeaderTitle}>Générer une tenue</Text>
         </View>
-      </LinearGradient>
+      </View>
 
       <FormStepper currentStep={formStep} />
 
@@ -826,14 +810,9 @@ export default function StylistScreen() {
         activeOpacity={0.85}
       >
         {occasion ? (
-          <LinearGradient
-            colors={['#1e40af', '#2563eb', '#00c4bf']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.submitBtn}
-          >
+          <View style={styles.submitBtn}>
             <Text style={styles.submitBtnText}>Suivant</Text>
-          </LinearGradient>
+          </View>
         ) : (
           <View style={[styles.submitBtn, styles.submitBtnDisabled]}>
             <Text style={[styles.submitBtnText, styles.submitBtnTextDisabled]}>Suivant</Text>
@@ -1212,18 +1191,14 @@ const styles = StyleSheet.create({
   submitBtnWrap: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
   },
   submitBtn: {
     paddingVertical: spacing[4],
     alignItems: 'center',
     borderRadius: 14,
+    backgroundColor: '#00C4BF',
   },
-  submitBtnDisabled: { backgroundColor: '#E2E8F0', shadowOpacity: 0 },
+  submitBtnDisabled: { backgroundColor: '#E2E8F0' },
   submitBtnText: {
     fontFamily: 'Poppins_700Bold',
     color: '#FFFFFF',
@@ -1551,16 +1526,12 @@ const styles = StyleSheet.create({
   btnWornWrap: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
   },
   btnWorn: {
     paddingVertical: spacing[4],
     alignItems: 'center',
     borderRadius: 14,
+    backgroundColor: '#00C4BF',
   },
   btnSave: {
     paddingVertical: spacing[4],

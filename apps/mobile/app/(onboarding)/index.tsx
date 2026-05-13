@@ -1,4 +1,4 @@
-import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { spacing } from '@outfit-now/design-tokens';
 import type { Gender } from '@outfit-now/shared-types';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -28,8 +28,16 @@ const GENDERS: { label: string; value: Gender; sub: string }[] = [
 ];
 
 const STYLES = [
-  'Minimaliste', 'Casual', 'Classique', 'Sportswear',
-  'Bohème', 'Urbain', 'Chic', 'Vintage', 'Streetwear', 'Business',
+  'Minimaliste',
+  'Casual',
+  'Classique',
+  'Sportswear',
+  'Bohème',
+  'Urbain',
+  'Chic',
+  'Vintage',
+  'Streetwear',
+  'Business',
 ];
 
 const COLORS = [
@@ -90,7 +98,11 @@ export default function OnboardingScreen() {
     if (!gender) return;
     setSaving(true);
     try {
-      await completeOnboarding({ gender, stylePreferences: styles_, bodyType: bodyType ?? undefined });
+      await completeOnboarding({
+        gender,
+        stylePreferences: styles_,
+        bodyType: bodyType ?? undefined,
+      });
       track.onboardingCompleted({ gender, styleCount: styles_.length });
       await refresh();
       router.replace('/(app)/dressing');
@@ -110,25 +122,32 @@ export default function OnboardingScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.progressRow}>
-          {STEP_LABELS.map((label, i) => (
-            <View key={label} style={styles.stepItem}>
-              <View style={[styles.stepDot, i < step && styles.stepDotDone, i + 1 === step && styles.stepDotActive]} />
-              <Text style={[styles.stepDotLabel, i + 1 === step && styles.stepDotLabelActive]}>
-                {label}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${(step / TOTAL_STEPS) * 100}%` }]} />
+      {/* Progress bar */}
+      <View style={styles.headerGradient}>
+        <View style={styles.header}>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${(step / TOTAL_STEPS) * 100}%` }]} />
+          </View>
+          <View style={styles.progressRow}>
+            {STEP_LABELS.map((label, i) => (
+              <View key={label} style={styles.stepItem}>
+                <View
+                  style={[
+                    styles.stepDot,
+                    i < step && styles.stepDotDone,
+                    i + 1 === step && styles.stepDotActive,
+                  ]}
+                />
+                <Text style={[styles.stepDotLabel, i + 1 === step && styles.stepDotLabelActive]}>
+                  {label}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-
         {step === 1 && (
           <View style={styles.stepContainer}>
             <Text style={styles.eyebrow}>ÉTAPE 01</Text>
@@ -141,7 +160,9 @@ export default function OnboardingScreen() {
                   style={[styles.genderCard, gender === g.value && styles.genderCardActive]}
                   onPress={() => setGender(g.value)}
                 >
-                  <Text style={[styles.genderLabel, gender === g.value && styles.genderLabelActive]}>
+                  <Text
+                    style={[styles.genderLabel, gender === g.value && styles.genderLabelActive]}
+                  >
                     {g.label}
                   </Text>
                   <Text style={[styles.genderSub, gender === g.value && styles.genderSubActive]}>
@@ -164,7 +185,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={styles.textInput}
                 placeholder="Ex: 1995"
-                placeholderTextColor={colors.neutral[700]}
+                placeholderTextColor="#A0AEC0"
                 keyboardType="number-pad"
                 value={birthYear}
                 onChangeText={setBirthYear}
@@ -179,7 +200,7 @@ export default function OnboardingScreen() {
               <TextInput
                 style={styles.textInput}
                 placeholder="Ex: 175"
-                placeholderTextColor={colors.neutral[700]}
+                placeholderTextColor="#A0AEC0"
                 keyboardType="number-pad"
                 value={height}
                 onChangeText={setHeight}
@@ -224,7 +245,9 @@ export default function OnboardingScreen() {
                   style={[styles.tagChip, colorPrefs.includes(c.value) && styles.tagChipActive]}
                   onPress={() => toggleColor(c.value)}
                 >
-                  <Text style={[styles.tagLabel, colorPrefs.includes(c.value) && styles.tagLabelActive]}>
+                  <Text
+                    style={[styles.tagLabel, colorPrefs.includes(c.value) && styles.tagLabelActive]}
+                  >
                     {c.label}
                   </Text>
                 </TouchableOpacity>
@@ -237,7 +260,9 @@ export default function OnboardingScreen() {
           <View style={styles.stepContainer}>
             <Text style={styles.eyebrow}>ÉTAPE 05</Text>
             <Text style={styles.stepTitle}>Ta{'\n'}morphologie</Text>
-            <Text style={styles.stepSub}>Pour adapter les suggestions à ta silhouette (optionnel).</Text>
+            <Text style={styles.stepSub}>
+              Pour adapter les suggestions à ta silhouette (optionnel).
+            </Text>
             <View style={styles.bodyGrid}>
               {BODY_TYPES.map((b) => (
                 <TouchableOpacity
@@ -253,7 +278,6 @@ export default function OnboardingScreen() {
             </View>
           </View>
         )}
-
       </ScrollView>
 
       <View style={styles.footer}>
@@ -263,16 +287,27 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={[styles.nextBtn, !canProceed() && styles.nextBtnDisabled]}
+          style={styles.nextBtnWrap}
           onPress={handleNext}
           disabled={!canProceed() || saving}
+          activeOpacity={0.88}
         >
-          {saving ? (
-            <ActivityIndicator color={colors.neutral[950]} />
+          {canProceed() ? (
+            <View style={styles.nextBtn}>
+              {saving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.nextBtnText}>
+                  {step === TOTAL_STEPS ? 'COMMENCER' : 'CONTINUER'}
+                </Text>
+              )}
+            </View>
           ) : (
-            <Text style={styles.nextBtnText}>
-              {step === TOTAL_STEPS ? 'COMMENCER' : 'CONTINUER'}
-            </Text>
+            <View style={[styles.nextBtn, styles.nextBtnDisabled]}>
+              <Text style={styles.nextBtnText}>
+                {step === TOTAL_STEPS ? 'COMMENCER' : 'CONTINUER'}
+              </Text>
+            </View>
           )}
         </TouchableOpacity>
       </View>
@@ -281,12 +316,26 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral[950] },
-  header: {
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+
+  headerGradient: {
     paddingTop: spacing[16],
     paddingHorizontal: spacing[6],
     paddingBottom: spacing[5],
+  },
+  header: {
     gap: spacing[3],
+  },
+  progressTrack: {
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 4,
+    backgroundColor: '#00C4BF',
+    borderRadius: 2,
   },
   progressRow: {
     flexDirection: 'row',
@@ -298,50 +347,47 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.neutral[800],
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E2E8F0',
   },
-  stepDotDone: { backgroundColor: colors.primary[700] },
-  stepDotActive: { backgroundColor: colors.primary[400], width: 16 },
+  stepDotDone: { backgroundColor: '#00C4BF' },
+  stepDotActive: { backgroundColor: '#00C4BF', width: 20, borderRadius: 4 },
   stepDotLabel: {
+    fontFamily: 'Poppins_400Regular',
     fontSize: 9,
-    color: colors.neutral[700],
+    color: '#A0AEC0',
     letterSpacing: 1,
-    fontWeight: typography.fontWeight.medium,
   },
-  stepDotLabelActive: { color: colors.primary[400] },
-  progressTrack: {
-    height: 1,
-    backgroundColor: colors.neutral[800],
-    overflow: 'hidden',
+  stepDotLabelActive: {
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#00C4BF',
   },
-  progressFill: {
-    height: 1,
-    backgroundColor: colors.primary[500],
-  },
+
   content: { paddingHorizontal: spacing[6], paddingBottom: spacing[4] },
   stepContainer: { gap: spacing[5], paddingTop: spacing[4] },
+
   eyebrow: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[400],
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 11,
+    color: '#00C4BF',
     letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
   },
   stepTitle: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    lineHeight: 40,
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 28,
+    color: '#0D1B2A',
+    lineHeight: 38,
   },
   stepSub: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 13,
+    color: '#A0AEC0',
     lineHeight: 22,
     marginTop: -spacing[2],
   },
+
   genderGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -350,63 +396,68 @@ const styles = StyleSheet.create({
   genderCard: {
     width: '46%',
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: '#E2E8F0',
     padding: spacing[5],
     gap: spacing[1],
-    backgroundColor: colors.neutral[900],
+    backgroundColor: '#f8faff',
     borderRadius: 14,
   },
   genderCardActive: {
-    borderColor: colors.primary[500],
-    backgroundColor: 'rgba(36,72,216,0.08)',
+    borderColor: '#00C4BF',
+    backgroundColor: 'rgba(0,196,191,0.08)',
   },
   genderLabel: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[300],
-    fontWeight: typography.fontWeight.semibold,
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 15,
+    color: '#0D1B2A',
   },
-  genderLabelActive: { color: colors.primary[300] },
+  genderLabelActive: { color: '#00C4BF' },
   genderSub: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[600],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 11,
+    color: '#A0AEC0',
   },
-  genderSubActive: { color: colors.primary[600] },
+  genderSubActive: { color: '#00C4BF' },
+
   inputGroup: { gap: spacing[2] },
   inputLabel: {
-    fontSize: typography.fontSize.xs,
-    color: colors.neutral[500],
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 11,
+    color: '#A0AEC0',
     letterSpacing: 2,
-    fontWeight: typography.fontWeight.medium,
   },
   textInput: {
-    fontSize: typography.fontSize.base,
-    color: colors.neutral[0],
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 15,
+    color: '#0D1B2A',
     paddingVertical: spacing[2],
     backgroundColor: 'transparent',
   },
   inputLine: {
     height: 1,
-    backgroundColor: colors.neutral[800],
+    backgroundColor: '#E2E8F0',
   },
+
   tagGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] },
   tagChip: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 9999,
   },
   tagChipActive: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
   },
   tagLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13,
+    color: '#A0AEC0',
   },
-  tagLabelActive: { color: colors.neutral[950] },
+  tagLabelActive: { color: '#FFFFFF' },
+
   bodyGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -416,20 +467,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[5],
     paddingVertical: spacing[3],
     borderWidth: 1,
-    borderColor: colors.neutral[800],
-    backgroundColor: colors.neutral[900],
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
     borderRadius: 9999,
   },
   bodyCardActive: {
-    backgroundColor: colors.primary[500],
-    borderColor: colors.primary[500],
+    backgroundColor: '#00C4BF',
+    borderColor: '#00C4BF',
   },
   bodyLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
-    fontWeight: typography.fontWeight.medium,
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 13,
+    color: '#A0AEC0',
   },
-  bodyLabelActive: { color: colors.neutral[950] },
+  bodyLabelActive: { color: '#FFFFFF' },
+
   footer: {
     flexDirection: 'row',
     paddingHorizontal: spacing[6],
@@ -437,7 +489,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing[4],
     gap: spacing[3],
     borderTopWidth: 1,
-    borderTopColor: colors.neutral[900],
+    borderTopColor: '#E2E8F0',
   },
   backBtn: {
     width: 56,
@@ -445,30 +497,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.neutral[800],
+    borderColor: '#E2E8F0',
     borderRadius: 9999,
   },
   backBtnText: {
-    color: colors.neutral[400],
-    fontSize: typography.fontSize.lg,
+    fontFamily: 'Poppins_400Regular',
+    color: '#A0AEC0',
+    fontSize: 18,
+  },
+  nextBtnWrap: {
+    flex: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
   },
   nextBtn: {
-    flex: 1,
-    backgroundColor: colors.primary[500],
     paddingVertical: spacing[4],
     alignItems: 'center',
-    borderRadius: 9999,
-    shadowColor: '#2448D8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    borderRadius: 14,
+    backgroundColor: '#00C4BF',
   },
-  nextBtnDisabled: { backgroundColor: colors.neutral[700], shadowOpacity: 0 },
+  nextBtnDisabled: { backgroundColor: '#E2E8F0' },
   nextBtnText: {
-    color: colors.neutral[950],
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.black,
+    fontFamily: 'Poppins_700Bold',
+    color: '#FFFFFF',
+    fontSize: 13,
     letterSpacing: 3,
   },
 });

@@ -1,5 +1,4 @@
 import { colors, typography, spacing } from '@outfit-now/design-tokens';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
 import { useState, useRef, useEffect } from 'react';
 import {
@@ -177,20 +176,13 @@ export default function LoginScreen() {
             onPressOut={onButtonPressOut}
             disabled={loading}
             activeOpacity={1}
-            style={{ borderRadius: 9999, overflow: 'hidden' }}
+            style={styles.button}
           >
-            <LinearGradient
-              colors={['#1e40af', '#2563eb', '#00c4bf']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.button}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>SE CONNECTER</Text>
-              )}
-            </LinearGradient>
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.buttonText}>SE CONNECTER</Text>
+            )}
           </TouchableOpacity>
         </Animated.View>
 
@@ -279,16 +271,12 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
     borderRadius: 9999,
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 8,
   },
   button: {
     paddingVertical: spacing[4],
     alignItems: 'center',
     borderRadius: 9999,
+    backgroundColor: '#00C4BF',
   },
   buttonDisabled: {
     opacity: 0.6,

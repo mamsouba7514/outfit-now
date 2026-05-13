@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { spacing } from '@outfit-now/design-tokens';
 import type { Outfit } from '@outfit-now/shared-types';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import {
@@ -117,10 +116,6 @@ export default function OutfitsScreen() {
     }
   }
 
-  const headerColors: [string, string, string] = theme.dark
-    ? ['#0f172a', '#0a0f1e', '#0a0f1e']
-    : ['#dbeafe', '#f8faff', '#ffffff'];
-
   function renderItem({ item, index }: { item: Outfit; index: number }) {
     const isSaved = item.savedAt !== null;
     const isLeft = index % 2 === 0;
@@ -148,7 +143,7 @@ export default function OutfitsScreen() {
               style={[
                 styles.cardImage,
                 styles.cardImagePlaceholder,
-                { backgroundColor: theme.dark ? '#1e3a5f' : '#dbeafe' },
+                { backgroundColor: theme.colors.surface },
               ]}
             >
               <Ionicons name="shirt-outline" size={32} color="#dbeafe" />
@@ -177,14 +172,9 @@ export default function OutfitsScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={theme.colors.statusBar} />
 
-      <LinearGradient
-        colors={headerColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
+      <View style={styles.headerGradient}>
         <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Mes looks</Text>
-      </LinearGradient>
+      </View>
 
       <View style={[styles.tabRow, { borderBottomColor: theme.colors.border }]}>
         {TABS.map((tab) => (
@@ -206,14 +196,7 @@ export default function OutfitsScreen() {
             >
               {tab.label}
             </Text>
-            {activeTab === tab.value && (
-              <LinearGradient
-                colors={['#1e40af', '#2563eb', '#00c4bf']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.tabUnderline}
-              />
-            )}
+            {activeTab === tab.value && <View style={styles.tabUnderline} />}
           </TouchableOpacity>
         ))}
       </View>
@@ -253,14 +236,9 @@ export default function OutfitsScreen() {
                 style={styles.emptyBtnWrap}
                 onPress={() => router.push('/(app)/stylist' as never)}
               >
-                <LinearGradient
-                  colors={['#1e40af', '#2563eb', '#00c4bf']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.emptyBtn}
-                >
+                <View style={styles.emptyBtn}>
                   <Text style={styles.emptyBtnText}>CRÉER UNE TENUE</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           }
@@ -375,7 +353,15 @@ const styles = StyleSheet.create({
   },
   tabBtn: { marginRight: spacing[6], paddingBottom: spacing[3], alignItems: 'center' },
   tabLabel: { fontFamily: 'Poppins_500Medium', fontSize: 14 },
-  tabUnderline: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, borderRadius: 1 },
+  tabUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#00C4BF',
+  },
 
   grid: { paddingHorizontal: spacing[5], paddingBottom: spacing[20] },
 
@@ -499,16 +485,12 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
     borderRadius: 9999,
     overflow: 'hidden',
-    shadowColor: '#1e40af',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
   },
   emptyBtn: {
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[6],
     borderRadius: 9999,
+    backgroundColor: '#00C4BF',
     alignItems: 'center',
   },
   emptyBtnText: { fontFamily: 'Poppins_700Bold', color: '#FFFFFF', fontSize: 12, letterSpacing: 2 },
