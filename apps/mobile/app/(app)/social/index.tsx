@@ -35,6 +35,240 @@ import {
 
 type Tab = 'feed' | 'explore';
 
+// ── Mock seed data for Explorer ───────────────────────────────────────────────
+
+const MOCK_EXPLORE_POSTS: Post[] = [
+  {
+    id: 'mock-1',
+    author: {
+      id: 'mock-u1',
+      firstName: 'Léa',
+      lastName: 'Martin',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80',
+    },
+    caption:
+      'Airport edit minimaliste — blanc optique + denim délavé. Confort et style au départ ✈️',
+    outfit: {
+      id: 'mock-o1',
+      justification:
+        'Palette tricolore blanc/bleu/noir à contraste maximal. Le blanc ancre, le denim apporte la texture.',
+      score: 0.83,
+      items: [
+        {
+          id: 'mock-i1a',
+          imageUrl:
+            'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=300&q=80',
+          category: 'top',
+        },
+        {
+          id: 'mock-i1b',
+          imageUrl:
+            'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=300&q=80',
+          category: 'bottom',
+        },
+        {
+          id: 'mock-i1c',
+          imageUrl:
+            'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80',
+          category: 'shoes',
+        },
+      ],
+    },
+    likesCount: 34,
+    commentsCount: 7,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+  },
+  {
+    id: 'mock-2',
+    author: {
+      id: 'mock-u2',
+      firstName: 'Camille',
+      lastName: 'Dubois',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=80&q=80',
+    },
+    caption: 'Soirée rooftop 🌆 La robe noire ne trahit jamais.',
+    outfit: {
+      id: 'mock-o2',
+      justification:
+        'Silhouette minimaliste soirée : robe fourreau noire, escarpins nude, clutch dorée.',
+      score: 0.91,
+      items: [
+        {
+          id: 'mock-i2a',
+          imageUrl:
+            'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=300&q=80',
+          category: 'dress',
+        },
+        {
+          id: 'mock-i2b',
+          imageUrl:
+            'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=300&q=80',
+          category: 'shoes',
+        },
+      ],
+    },
+    likesCount: 91,
+    commentsCount: 18,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+  },
+  {
+    id: 'mock-3',
+    author: {
+      id: 'mock-u3',
+      firstName: 'Thomas',
+      lastName: 'Renard',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=80&q=80',
+    },
+    caption: 'Business casual vendredi. Le blazer beige change tout 🤝',
+    outfit: {
+      id: 'mock-o3',
+      justification:
+        'Blazer structuré beige sur t-shirt blanc et chino marine — autorité sans rigidité.',
+      score: 0.87,
+      items: [
+        {
+          id: 'mock-i3a',
+          imageUrl:
+            'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=300&q=80',
+          category: 'top',
+        },
+        {
+          id: 'mock-i3b',
+          imageUrl:
+            'https://images.unsplash.com/photo-1624378515195-4ab9e0e8e5d3?auto=format&fit=crop&w=300&q=80',
+          category: 'bottom',
+        },
+        {
+          id: 'mock-i3c',
+          imageUrl:
+            'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=300&q=80',
+          category: 'shoes',
+        },
+      ],
+    },
+    likesCount: 56,
+    commentsCount: 11,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+  {
+    id: 'mock-4',
+    author: {
+      id: 'mock-u4',
+      firstName: 'Sofia',
+      lastName: 'Petit',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80',
+    },
+    caption: 'Weekend market vibes 🧺 Couleurs douces, matières naturelles.',
+    outfit: {
+      id: 'mock-o4',
+      justification:
+        'Look marché dominical : linen top ivoire, jupe midi terracotta, sandales tressées.',
+      score: 0.79,
+      items: [
+        {
+          id: 'mock-i4a',
+          imageUrl:
+            'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=300&q=80',
+          category: 'top',
+        },
+        {
+          id: 'mock-i4b',
+          imageUrl:
+            'https://images.unsplash.com/photo-1515372683344-06f929e91a2b?auto=format&fit=crop&w=300&q=80',
+          category: 'bottom',
+        },
+      ],
+    },
+    likesCount: 47,
+    commentsCount: 9,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: 'mock-5',
+    author: {
+      id: 'mock-u5',
+      firstName: 'Julien',
+      lastName: 'Bernard',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80',
+    },
+    caption: 'Run club samedi matin ☀️ Performance + style, les deux.',
+    outfit: {
+      id: 'mock-o5',
+      justification:
+        'Ensemble sport technique : t-shirt compression, short running, baskets boost.',
+      score: 0.88,
+      items: [
+        {
+          id: 'mock-i5a',
+          imageUrl:
+            'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=300&q=80',
+          category: 'top',
+        },
+        {
+          id: 'mock-i5b',
+          imageUrl:
+            'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=300&q=80',
+          category: 'shoes',
+        },
+      ],
+    },
+    likesCount: 29,
+    commentsCount: 4,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+  },
+  {
+    id: 'mock-6',
+    author: {
+      id: 'mock-u6',
+      firstName: 'Inès',
+      lastName: 'Laurent',
+      avatarUrl:
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80',
+    },
+    caption: 'Street style Paris — oversize coat saison 🍂',
+    outfit: {
+      id: 'mock-o6',
+      justification:
+        'Manteau oversize camel sur total look noir : jeans slim, bottines, sac baguette.',
+      score: 0.93,
+      items: [
+        {
+          id: 'mock-i6a',
+          imageUrl:
+            'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=300&q=80',
+          category: 'outerwear',
+        },
+        {
+          id: 'mock-i6b',
+          imageUrl:
+            'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=300&q=80',
+          category: 'bottom',
+        },
+        {
+          id: 'mock-i6c',
+          imageUrl:
+            'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=300&q=80',
+          category: 'shoes',
+        },
+      ],
+    },
+    likesCount: 112,
+    commentsCount: 23,
+    isLiked: false,
+    createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+  },
+];
+
 // ── Post Card ────────────────────────────────────────────────────────────────
 
 function PostCard({
@@ -88,7 +322,7 @@ function PostCard({
             <Text style={[styles.authorName, { color: theme.colors.textSecondary }]}>
               {post.author.firstName} {post.author.lastName}
             </Text>
-            <Text style={[styles.postTime, { color: theme.colors.border }]}>{timeAgo}</Text>
+            <Text style={[styles.postTime, { color: theme.colors.textMuted }]}>{timeAgo}</Text>
           </View>
         </TouchableOpacity>
 
@@ -543,7 +777,9 @@ export default function SocialScreen() {
   const [commentPost, setCommentPost] = useState<Post | null>(null);
   const [showShare, setShowShare] = useState(false);
 
-  const posts = tab === 'feed' ? feedPosts : explorePosts;
+  const rawPosts = tab === 'feed' ? feedPosts : explorePosts;
+  const posts =
+    tab === 'explore' && rawPosts.length === 0 && !loading ? MOCK_EXPLORE_POSTS : rawPosts;
   const hasMore = tab === 'feed' ? feedHasMore : exploreHasMore;
   const cursor = tab === 'feed' ? feedCursor : exploreCursor;
 
@@ -585,6 +821,19 @@ export default function SocialScreen() {
           likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1,
         };
       });
+    if (postId.startsWith('mock-')) {
+      // local-only like for mock posts
+      const mockIdx = MOCK_EXPLORE_POSTS.findIndex((p) => p.id === postId);
+      if (mockIdx !== -1) {
+        const p = MOCK_EXPLORE_POSTS[mockIdx];
+        MOCK_EXPLORE_POSTS[mockIdx] = {
+          ...p,
+          isLiked: !p.isLiked,
+          likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1,
+        };
+      }
+      return;
+    }
     if (tab === 'feed') setFeedPosts(updater);
     else setExplorePosts(updater);
     toggleLike(postId)
@@ -625,7 +874,7 @@ export default function SocialScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={theme.colors.statusBar as 'dark-content' | 'light-content'} />
+      <StatusBar barStyle={theme.colors.statusBar} />
 
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.colors.surface }]}>
