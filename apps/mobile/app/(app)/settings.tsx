@@ -1,4 +1,4 @@
-import { colors, typography, spacing } from '@outfit-now/design-tokens';
+import { spacing } from '@outfit-now/design-tokens';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -9,8 +9,10 @@ import {
   Alert,
   StatusBar,
   Linking,
+  Switch,
 } from 'react-native';
 
+import { useAppTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
 
@@ -18,6 +20,7 @@ const SECTION_GAP = spacing[6];
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const theme = useAppTheme();
   const { user, logout } = useAuthStore();
   const { isPremium, restore } = useSubscription();
 
@@ -45,259 +48,282 @@ export default function SettingsScreen() {
     void Linking.openURL('https://outfitnow.app/terms');
   }
 
+  const s = makeStyles(theme);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <StatusBar barStyle="dark-content" />
+    <ScrollView style={s.container} contentContainerStyle={s.content}>
+      <StatusBar barStyle={theme.colors.statusBar} />
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>← RETOUR</Text>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <Text style={s.backText}>← RETOUR</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>RÉGLAGES</Text>
+        <Text style={s.title}>RÉGLAGES</Text>
       </View>
 
       {/* ── Compte ────────────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>COMPTE</Text>
-        <View style={styles.card}>
-          <Row label="Email" value={user?.email ?? '—'} />
-          <RowDivider />
-          <Row label="Prénom" value={user?.firstName ?? '—'} />
-          <RowDivider />
-          <Row label="Nom" value={user?.lastName ?? '—'} />
+      <View style={s.section}>
+        <Text style={s.sectionLabel}>COMPTE</Text>
+        <View style={s.card}>
+          <Row label="Email" value={user?.email ?? '—'} theme={theme} />
+          <RowDivider theme={theme} />
+          <Row label="Prénom" value={user?.firstName ?? '—'} theme={theme} />
+          <RowDivider theme={theme} />
+          <Row label="Nom" value={user?.lastName ?? '—'} theme={theme} />
         </View>
       </View>
 
       {/* ── Abonnement ────────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>ABONNEMENT</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Plan actuel</Text>
-            <View style={[styles.tierBadge, isPremium && styles.tierBadgePremium]}>
-              <Text style={[styles.tierBadgeText, isPremium && styles.tierBadgeTextPremium]}>
+      <View style={s.section}>
+        <Text style={s.sectionLabel}>ABONNEMENT</Text>
+        <View style={s.card}>
+          <View style={s.row}>
+            <Text style={s.rowLabel}>Plan actuel</Text>
+            <View style={[s.tierBadge, isPremium && s.tierBadgePremium]}>
+              <Text style={[s.tierBadgeText, isPremium && s.tierBadgeTextPremium]}>
                 {isPremium ? '✦ PREMIUM' : 'GRATUIT'}
               </Text>
             </View>
           </View>
-          <RowDivider />
+          <RowDivider theme={theme} />
           {!isPremium ? (
             <TouchableOpacity
-              style={styles.row}
+              style={s.row}
               onPress={() => router.push('/(app)/premium' as never)}
               activeOpacity={0.7}
             >
-              <Text style={styles.rowLabelAction}>Passer à Premium</Text>
-              <Text style={styles.rowChevron}>→</Text>
+              <Text style={s.rowLabelAction}>Passer à Premium</Text>
+              <Text style={s.rowChevron}>→</Text>
             </TouchableOpacity>
           ) : (
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>Gérable depuis l'App Store</Text>
+            <View style={s.row}>
+              <Text style={s.rowLabel}>Gérable depuis l'App Store</Text>
             </View>
           )}
-          <RowDivider />
-          <TouchableOpacity style={styles.row} onPress={handleRestore} activeOpacity={0.7}>
-            <Text style={styles.rowLabel}>Restaurer mes achats</Text>
-            <Text style={styles.rowChevron}>→</Text>
+          <RowDivider theme={theme} />
+          <TouchableOpacity style={s.row} onPress={handleRestore} activeOpacity={0.7}>
+            <Text style={s.rowLabel}>Restaurer mes achats</Text>
+            <Text style={s.rowChevron}>→</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ── Préférences ───────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>PRÉFÉRENCES</Text>
-        <View style={styles.card}>
+      <View style={s.section}>
+        <Text style={s.sectionLabel}>PRÉFÉRENCES</Text>
+        <View style={s.card}>
           <TouchableOpacity
-            style={styles.row}
+            style={s.row}
             onPress={() => router.push('/(app)/profile' as never)}
             activeOpacity={0.7}
           >
-            <Text style={styles.rowLabel}>Modifier mon profil</Text>
-            <Text style={styles.rowChevron}>→</Text>
+            <Text style={s.rowLabel}>Modifier mon profil</Text>
+            <Text style={s.rowChevron}>→</Text>
           </TouchableOpacity>
-          <RowDivider />
+          <RowDivider theme={theme} />
           <TouchableOpacity
-            style={styles.row}
+            style={s.row}
             onPress={() => router.push('/(app)/avatar' as never)}
             activeOpacity={0.7}
           >
-            <Text style={styles.rowLabel}>Mon mannequin virtuel</Text>
-            <Text style={styles.rowChevron}>→</Text>
+            <Text style={s.rowLabel}>Mon mannequin virtuel</Text>
+            <Text style={s.rowChevron}>→</Text>
           </TouchableOpacity>
+          <RowDivider theme={theme} />
+          <View style={s.row}>
+            <Text style={s.rowLabel}>Mode sombre</Text>
+            <Switch
+              value={theme.dark}
+              onValueChange={theme.toggle}
+              trackColor={{ false: '#e2e8f0', true: '#00C4BF' }}
+              thumbColor="#ffffff"
+            />
+          </View>
         </View>
       </View>
 
       {/* ── Légal ─────────────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>LÉGAL</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={handlePrivacy} activeOpacity={0.7}>
-            <Text style={styles.rowLabel}>Politique de confidentialité</Text>
-            <Text style={styles.rowChevron}>↗</Text>
+      <View style={s.section}>
+        <Text style={s.sectionLabel}>LÉGAL</Text>
+        <View style={s.card}>
+          <TouchableOpacity style={s.row} onPress={handlePrivacy} activeOpacity={0.7}>
+            <Text style={s.rowLabel}>Politique de confidentialité</Text>
+            <Text style={s.rowChevron}>↗</Text>
           </TouchableOpacity>
-          <RowDivider />
-          <TouchableOpacity style={styles.row} onPress={handleTerms} activeOpacity={0.7}>
-            <Text style={styles.rowLabel}>Conditions d'utilisation</Text>
-            <Text style={styles.rowChevron}>↗</Text>
+          <RowDivider theme={theme} />
+          <TouchableOpacity style={s.row} onPress={handleTerms} activeOpacity={0.7}>
+            <Text style={s.rowLabel}>Conditions d'utilisation</Text>
+            <Text style={s.rowChevron}>↗</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* ── Déconnexion ───────────────────────────────────────────────────── */}
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-          <Text style={styles.logoutText}>SE DÉCONNECTER</Text>
+      <View style={s.section}>
+        <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
+          <Text style={s.logoutText}>SE DÉCONNECTER</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.version}>Outfit Now · v1.0.0</Text>
+      <Text style={s.version}>Outfit Now · v1.0.0</Text>
     </ScrollView>
   );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  theme,
+}: {
+  label: string;
+  value: string;
+  theme: ReturnType<typeof useAppTheme>;
+}) {
+  const s = makeStyles(theme);
   return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+    <View style={s.row}>
+      <Text style={s.rowLabel}>{label}</Text>
+      <Text style={s.rowValue} numberOfLines={1}>
+        {value}
+      </Text>
     </View>
   );
 }
 
-function RowDivider() {
-  return <View style={styles.rowDivider} />;
+function RowDivider({ theme }: { theme: ReturnType<typeof useAppTheme> }) {
+  return (
+    <View
+      style={{ height: 1, backgroundColor: theme.colors.border, marginHorizontal: spacing[5] }}
+    />
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.neutral[950] },
-  content: {
-    paddingBottom: spacing[16],
-    gap: SECTION_GAP,
-  },
+function makeStyles(theme: ReturnType<typeof useAppTheme>) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.colors.background },
+    content: {
+      paddingBottom: spacing[16],
+      gap: SECTION_GAP,
+    },
 
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    paddingHorizontal: spacing[6],
-    paddingTop: spacing[16],
-    paddingBottom: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[900],
-    gap: spacing[2],
-  },
-  backBtn: { marginBottom: spacing[1] },
-  backText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary[400],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
-  },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: typography.fontSize['3xl'],
-    fontWeight: typography.fontWeight.bold,
-    color: colors.neutral[0],
-    letterSpacing: -0.5,
-  },
+    header: {
+      paddingHorizontal: spacing[6],
+      paddingTop: spacing[16],
+      paddingBottom: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+      gap: spacing[2],
+    },
+    backBtn: { marginBottom: spacing[1] },
+    backText: {
+      fontSize: 11,
+      color: '#00C4BF',
+      letterSpacing: 2,
+      fontFamily: 'Poppins_700Bold',
+    },
+    title: {
+      fontFamily: 'Poppins_700Bold',
+      fontSize: 28,
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.5,
+    },
 
-  // ── Section ───────────────────────────────────────────────────────────────
-  section: {
-    paddingHorizontal: spacing[6],
-    gap: spacing[3],
-  },
-  sectionLabel: {
-    fontSize: 9,
-    color: colors.neutral[600],
-    letterSpacing: 3,
-    fontWeight: typography.fontWeight.black,
-  },
-  card: {
-    backgroundColor: colors.neutral[900],
-    borderWidth: 1,
-    borderColor: colors.neutral[800],
-  },
+    section: {
+      paddingHorizontal: spacing[6],
+      gap: spacing[3],
+    },
+    sectionLabel: {
+      fontSize: 9,
+      color: theme.colors.textMuted,
+      letterSpacing: 3,
+      fontFamily: 'Poppins_700Bold',
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+    },
 
-  // ── Row ───────────────────────────────────────────────────────────────────
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[5],
-    paddingVertical: spacing[4],
-  },
-  rowDivider: {
-    height: 1,
-    backgroundColor: colors.neutral[800],
-    marginHorizontal: spacing[5],
-  },
-  rowLabel: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[400],
-    flex: 1,
-  },
-  rowLabelAction: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[200],
-    fontWeight: typography.fontWeight.medium,
-    flex: 1,
-  },
-  rowValue: {
-    fontSize: typography.fontSize.sm,
-    color: colors.neutral[200],
-    fontWeight: typography.fontWeight.medium,
-    maxWidth: '55%',
-    textAlign: 'right',
-  },
-  rowChevron: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary[500],
-    fontWeight: typography.fontWeight.bold,
-  },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing[5],
+      paddingVertical: spacing[4],
+    },
+    rowLabel: {
+      fontSize: 14,
+      color: theme.colors.textMuted,
+      fontFamily: 'Poppins_400Regular',
+      flex: 1,
+    },
+    rowLabelAction: {
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+      fontFamily: 'Poppins_500Medium',
+      flex: 1,
+    },
+    rowValue: {
+      fontSize: 14,
+      color: theme.colors.textPrimary,
+      fontFamily: 'Poppins_500Medium',
+      maxWidth: '55%',
+      textAlign: 'right',
+    },
+    rowChevron: {
+      fontSize: 14,
+      color: '#00C4BF',
+      fontFamily: 'Poppins_700Bold',
+    },
 
-  // ── Tier badge ────────────────────────────────────────────────────────────
-  tierBadge: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    borderWidth: 1,
-    borderColor: colors.neutral[700],
-  },
-  tierBadgePremium: {
-    borderColor: colors.primary[600],
-    backgroundColor: '#1A0F00',
-  },
-  tierBadgeText: {
-    fontSize: 9,
-    color: colors.neutral[500],
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
-  },
-  tierBadgeTextPremium: {
-    color: colors.primary[400],
-  },
+    tierBadge: {
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[1],
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 4,
+    },
+    tierBadgePremium: {
+      borderColor: '#00C4BF',
+      backgroundColor: 'rgba(0,196,191,0.08)',
+    },
+    tierBadgeText: {
+      fontSize: 9,
+      color: theme.colors.textMuted,
+      letterSpacing: 2,
+      fontFamily: 'Poppins_700Bold',
+    },
+    tierBadgeTextPremium: {
+      color: '#00C4BF',
+    },
 
-  // ── Logout ────────────────────────────────────────────────────────────────
-  logoutBtn: {
-    borderWidth: 1,
-    borderColor: '#3D1010',
-    paddingVertical: spacing[4],
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.error,
-    letterSpacing: 2,
-    fontWeight: typography.fontWeight.black,
-  },
+    logoutBtn: {
+      borderWidth: 1,
+      borderColor: 'rgba(255,107,107,0.3)',
+      borderRadius: 12,
+      paddingVertical: spacing[4],
+      alignItems: 'center',
+    },
+    logoutText: {
+      fontSize: 11,
+      color: '#FF6B6B',
+      letterSpacing: 2,
+      fontFamily: 'Poppins_700Bold',
+    },
 
-  version: {
-    fontSize: 10,
-    color: colors.neutral[800],
-    textAlign: 'center',
-    letterSpacing: 1,
-    paddingBottom: spacing[4],
-  },
-});
+    version: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      textAlign: 'center',
+      letterSpacing: 1,
+      paddingBottom: spacing[4],
+      fontFamily: 'Poppins_400Regular',
+    },
+  });
+}
