@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -28,13 +29,14 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { weather } = useWeather();
+  const { weather, daily } = useWeather();
   const theme = useAppTheme();
 
   const [dressingCount, setDressingCount] = useState<number | null>(null);
   const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showWeatherModal, setShowWeatherModal] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -115,25 +117,26 @@ export default function HomeScreen() {
         {/* 2-col context cards */}
         <View style={styles.contextRow}>
           {/* Weather card */}
-          <View
+          <TouchableOpacity
             style={[
               styles.contextCard,
               { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
             ]}
+            onPress={() => setShowWeatherModal(true)}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.contextCardLabel, { color: theme.colors.textMuted }]}>
-              {weather ? 'Météo' : 'Paris, France'}
-            </Text>
+            <Text style={[styles.contextCardLabel, { color: theme.colors.textMuted }]}>Météo</Text>
             <View style={styles.weatherMain}>
-              <Text style={styles.weatherEmoji}>☀️</Text>
+              <Text style={styles.weatherEmoji}>{weather ? weather.emoji : '🌡️'}</Text>
               <Text style={[styles.weatherTemp, { color: theme.colors.textPrimary }]}>
-                {weather ? `${weather.note.split(',')[0]}` : '18°'}
+                {weather ? `${weather.tempC}°` : '—'}
               </Text>
             </View>
             <Text style={[styles.weatherDesc, { color: theme.colors.textMuted }]}>
-              {weather ? weather.description : 'Ensoleillé'}
+              {weather ? weather.description : '…'}
             </Text>
-          </View>
+            <Text style={[styles.weatherTap, { color: theme.colors.primaryBrand }]}>Semaine →</Text>
+          </TouchableOpacity>
 
           {/* Garde-robe card */}
           <TouchableOpacity
@@ -251,6 +254,50 @@ export default function HomeScreen() {
           </View>
         ) : null}
       </Animated.View>
+
+      {/* Weekly weather modal */}
+      <Modal
+        visible={showWeatherModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowWeatherModal(false)}
+      >
+        <View style={[modalStyles.container, { backgroundColor: theme.colors.background }]}>
+          <View style={[modalStyles.header, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[modalStyles.title, { color: theme.colors.textPrimary }]}>
+              Météo de la semaine
+            </Text>
+            <TouchableOpacity onPress={() => setShowWeatherModal(false)} hitSlop={12}>
+              <Ionicons name="close" size={24} color={theme.colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={modalStyles.list}>
+            {daily.map((day) => (
+              <View
+                key={day.date}
+                style={[
+                  modalStyles.row,
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                ]}
+              >
+                <Text style={[modalStyles.dayLabel, { color: theme.colors.textMuted }]}>
+                  {day.dayLabel}
+                </Text>
+                <Text style={modalStyles.dayEmoji}>{day.emoji}</Text>
+                <Text
+                  style={[modalStyles.dayDesc, { color: theme.colors.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {day.description}
+                </Text>
+                <Text style={[modalStyles.dayTemps, { color: theme.colors.textPrimary }]}>
+                  {day.tempMax}° / {day.tempMin}°
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -405,6 +452,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  weatherTap: {
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 10,
+    marginTop: 6,
+    letterSpacing: 0.5,
+  },
   wardrobeCount: {
     fontFamily: 'Poppins_700Bold',
     fontSize: 32,
@@ -432,7 +485,7 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     paddingVertical: 16,
     borderRadius: 14,
-    backgroundColor: '#00C4BF',
+    backgroundColor: '#2563eb',
   },
   generateBtnText: {
     fontFamily: 'Poppins_600SemiBold',
@@ -493,4 +546,42 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontFamily: 'Poppins_600SemiBold', fontSize: 15 },
   emptySub: { fontFamily: 'Poppins_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20 },
+});
+
+const modalStyles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
+    borderBottomWidth: 1,
+  },
+  title: { fontFamily: 'Poppins_700Bold', fontSize: 18 },
+  list: { padding: spacing[5], gap: 10 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    gap: 10,
+  },
+  dayLabel: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 13,
+    width: 36,
+  },
+  dayEmoji: { fontSize: 20, width: 28 },
+  dayDesc: {
+    fontFamily: 'Poppins_400Regular',
+    fontSize: 13,
+    flex: 1,
+  },
+  dayTemps: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 13,
+  },
 });
