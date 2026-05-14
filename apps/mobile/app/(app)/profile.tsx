@@ -1,5 +1,6 @@
 import { spacing } from '@outfit-now/design-tokens';
 import type { Gender } from '@outfit-now/shared-types';
+import * as FileSystem from 'expo-file-system';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -92,10 +93,10 @@ export default function ProfileScreen() {
         '/v1/me/avatar/upload-url',
       );
       const fileUri = result.assets[0].uri;
-      await fetch(uploadUrl, {
-        method: 'PUT',
+      await FileSystem.uploadAsync(uploadUrl, fileUri, {
+        httpMethod: 'PUT',
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
         headers: { 'Content-Type': 'image/jpeg' },
-        body: await fetch(fileUri).then((r) => r.blob()),
       });
       await updateMe({ avatarUrl: key });
       await refresh();
