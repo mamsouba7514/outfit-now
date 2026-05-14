@@ -1,5 +1,7 @@
 import { spacing } from '@outfit-now/design-tokens';
 import type { Gender } from '@outfit-now/shared-types';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -16,6 +18,7 @@ import {
 
 import { useAppTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../hooks/useAuth';
+import { apiRequest } from '../../lib/api';
 import { updateMe, requestExport, deleteAccount } from '../../lib/auth';
 
 const STYLE_TAGS = [
@@ -68,6 +71,36 @@ export default function ProfileScreen() {
       Alert.alert('Erreur', 'Impossible de sauvegarder. Réessaie.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePickAvatar() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== ImagePicker.PermissionStatus.GRANTED) {
+      Alert.alert('Permission refusée', "Active l'accès aux photos dans les réglages.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    try {
+      const { uploadUrl, key } = await apiRequest<{ uploadUrl: string; key: string }>(
+        '/v1/me/avatar/upload-url',
+      );
+      const fileUri = result.assets[0].uri;
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/jpeg' },
+        body: await fetch(fileUri).then((r) => r.blob()),
+      });
+      await updateMe({ avatarUrl: key });
+      await refresh();
+    } catch {
+      Alert.alert('Erreur', "Impossible d'uploader la photo.");
     }
   }
 
@@ -156,9 +189,18 @@ export default function ProfileScreen() {
           { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
         ]}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarInitials}>{initials}</Text>
-        </View>
+        <TouchableOpacity onPress={handlePickAvatar} activeOpacity={0.8} style={styles.avatarWrap}>
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} contentFit="cover" />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarInitials}>{initials}</Text>
+            </View>
+          )}
+          <View style={styles.avatarEditBadge}>
+            <Text style={styles.avatarEditIcon}>+</Text>
+          </View>
+        </TouchableOpacity>
         <View style={styles.avatarInfo}>
           <Text style={[styles.avatarName, { color: theme.colors.textPrimary }]}>
             {[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Mon compte'}
@@ -458,6 +500,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
   },
+  avatarWrap: { position: 'relative' },
   avatar: {
     width: 56,
     height: 56,
@@ -467,6 +510,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  avatarImg: { width: 56, height: 56, borderRadius: 28 },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#00C4BF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditIcon: { color: '#fff', fontSize: 12, lineHeight: 18, fontFamily: 'Poppins_700Bold' },
   avatarInitials: { fontFamily: 'Poppins_700Bold', fontSize: 20, color: '#FFFFFF' },
   avatarInfo: { flex: 1, gap: 2 },
   avatarName: { fontFamily: 'Poppins_600SemiBold', fontSize: 15 },

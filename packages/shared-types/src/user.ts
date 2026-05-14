@@ -18,6 +18,7 @@ export interface UpdateProfileRequest {
   lastName?: string;
   gender?: Gender;
   stylePreferences?: string[];
+  avatarUrl?: string;
 }
 
 export interface OnboardingRequest {

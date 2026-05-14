@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { prisma } from '../lib/prisma.js';
-import { createPresignedDownloadUrl } from '../lib/s3.js';
+import { createPresignedDownloadUrl, createPresignedUploadUrl } from '../lib/s3.js';
 import { computeStyleProfile } from '../services/styleProfile.js';
 
 const updateSchema = z.object({
@@ -10,6 +10,7 @@ const updateSchema = z.object({
   lastName: z.string().min(1).max(50).optional(),
   gender: z.enum(['male', 'female', 'non_binary', 'prefer_not_to_say']).optional(),
   stylePreferences: z.array(z.string()).max(20).optional(),
+  avatarUrl: z.string().optional(),
 });
 
 const onboardingSchema = z.object({
@@ -57,7 +58,7 @@ export async function meRoutes(app: FastifyInstance) {
     const body = updateSchema.safeParse(request.body);
     if (!body.success) return reply.status(400).send({ error: body.error.flatten() });
 
-    const { firstName, lastName, gender, stylePreferences } = body.data;
+    const { firstName, lastName, gender, stylePreferences, avatarUrl } = body.data;
     const user = await prisma.user.update({
       where: { id },
       data: {
@@ -65,6 +66,7 @@ export async function meRoutes(app: FastifyInstance) {
         ...(lastName !== undefined && { lastName }),
         ...(gender !== undefined && { gender }),
         ...(stylePreferences !== undefined && { stylePreferences }),
+        ...(avatarUrl !== undefined && { avatarUrl }),
       },
       select: {
         id: true,
@@ -79,6 +81,13 @@ export async function meRoutes(app: FastifyInstance) {
       },
     });
     return reply.send(user);
+  });
+
+  app.get('/v1/me/avatar/upload-url', auth, async (request, reply) => {
+    const { id } = request.user as { id: string };
+    const key = `avatars/${id}/profile.jpg`;
+    const uploadUrl = await createPresignedUploadUrl(key, 'image/jpeg');
+    return reply.send({ uploadUrl, key });
   });
 
   app.post('/v1/me/onboarding', auth, async (request, reply) => {
@@ -140,7 +149,9 @@ export async function meRoutes(app: FastifyInstance) {
       data: { userId: id, name: 'user.export_requested', payload: {} },
     });
 
-    return reply.status(202).send({ message: 'Export requested. You will receive an email within 24h.' });
+    return reply
+      .status(202)
+      .send({ message: 'Export requested. You will receive an email within 24h.' });
   });
 
   app.delete('/v1/me', auth, async (request, reply) => {
